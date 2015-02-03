@@ -285,91 +285,6 @@
 				}
 				return self;
 			};
-            
-       	var ellipse = function(cx, cy, rx, ry) {
-			var self = this;
-
-			var _cx = Math.min(cx, cx + rx);
-			var _cy = Math.min(cy, cy + ry);
-			var _rx = Math.abs(rx);
-            var _ry = Math.abs(ry);
-
-			var _lineWidth = 1;
-			var _strokeColor = 'black';
-			var _fillColor = null;
-			var _selected = false;
-			var _labelText = '';
-
-			Object.defineProperty(self, 'lineWidth', {
-				get: function() { return _lineWidth; },
-				set: function(value) { _lineWidth = value; }
-			});
-
-			Object.defineProperty(self, 'strokeColor', {
-				get: function () { return _strokeColor; },
-				set: function (value) { _strokeColor = value; }
-			});
-
-			Object.defineProperty(self, 'fillColor', {
-				get: function () { return _fillColor; },
-				set: function (value) { _fillColor = value; }
-			});
-
-			Object.defineProperty(self, 'selected', {
-				get: function () { return _selected; },
-				set: function (value) { _selected = value; }
-			});
-
-			Object.defineProperty(self, 'labelText', {
-				get: function () { return _labelText; },
-				set: function (value) { _labelText = value; }
-			});
-            
-			function setter(propname, value) {
-				self[propname] = value;
-				return self;
-			}
-
-			self.setStrokeColor = function (value) { return setter('strokeColor', value); };
-			self.setFillColor = function (value) { return setter('fillColor', value); };
-			self.setLineWidth = function (value) { return setter('lineWidth', value); };
-			self.setSelected = function (value) { return setter('selected', value); };
-			self.setLabelText = function (value) { return setter('labelText', value); };
-
-			self.draw = function(canvasId) {
-				var canvas = document.getElementById(canvasId);
-				var context = canvas.getContext('2d');
-				if (_selected)
-				{
-                    context.beginPath();
-
-                    context.translate(cx-rx, cy-ry);
-                    context.scale(rx, ry);
-                    context.arc(1, 1, 1, 0, 2 * Math.PI, false);
-
-                    context.restore(); // restore to original state
-                    if (_strokeColor) {
-                        context.strokeStyle = _strokeColor;
-                        context.stroke();
-                    }
-                    if (_fillColor) {
-                        context.fillStyle = _fillColor;
-                        context.fill();
-                    }
-				}
-
-				return self;
-			};
-                    
-			self.containsPoint = function (x, y) {
-				return self.containsPaddedPoint(x, y, 0, 0);
-			};
-			self.containsPaddedPoint = function (x, y, xPad, yPad) {
-				return (x >= _x - xPad && x <= (_x + _w + xPad)) && (y >= _y - yPad && y <= (_y + _h + yPad));
-			};
-		};
-
-
 			self.containsPoint = function (x, y) {
 				return self.containsPaddedPoint(x, y, 0, 0);
 			};
@@ -454,7 +369,90 @@
 
 				return self;
 			}
+		};   
+       	var ellipse = function(cx, cy, rx, ry) {
+			var self = this;
+
+			var _cx = Math.min(cx, cx + rx);
+			var _cy = Math.min(cy, cy + ry);
+			var _rx = Math.abs(rx);
+            var _ry = Math.abs(ry);
+
+			var _lineWidth = 1;
+			var _strokeColor = 'black';
+			var _fillColor = null;
+			var _selected = false;
+			var _labelText = '';
+
+			Object.defineProperty(self, 'lineWidth', {
+				get: function() { return _lineWidth; },
+				set: function(value) { _lineWidth = value; }
+			});
+
+			Object.defineProperty(self, 'strokeColor', {
+				get: function () { return _strokeColor; },
+				set: function (value) { _strokeColor = value; }
+			});
+
+			Object.defineProperty(self, 'fillColor', {
+				get: function () { return _fillColor; },
+				set: function (value) { _fillColor = value; }
+			});
+
+			Object.defineProperty(self, 'selected', {
+				get: function () { return _selected; },
+				set: function (value) { _selected = value; }
+			});
+
+			Object.defineProperty(self, 'labelText', {
+				get: function () { return _labelText; },
+				set: function (value) { _labelText = value; }
+			});
+            
+			function setter(propname, value) {
+				self[propname] = value;
+				return self;
+			}
+
+			self.setStrokeColor = function (value) { return setter('strokeColor', value); };
+			self.setFillColor = function (value) { return setter('fillColor', value); };
+			self.setLineWidth = function (value) { return setter('lineWidth', value); };
+			self.setSelected = function (value) { return setter('selected', value); };
+			self.setLabelText = function (value) { return setter('labelText', value); };
+
+			self.draw = function(canvasId) {
+				var canvas = document.getElementById(canvasId);
+				var context = canvas.getContext('2d');
+				if (_selected)
+				{
+                    context.beginPath();
+
+                    context.translate(cx-rx, cy-ry);
+                    context.scale(rx, ry);
+                    context.arc(1, 1, 1, 0, 2 * Math.PI, false);
+
+                    context.restore(); // restore to original state
+                    if (_strokeColor) {
+                        context.strokeStyle = _strokeColor;
+                        context.stroke();
+                    }
+                    if (_fillColor) {
+                        context.fillStyle = _fillColor;
+                        context.fill();
+                    }
+				}
+
+				return self;
+			};
+                    
+			self.containsPoint = function (x, y) {
+				return self.containsPaddedPoint(x, y, 0, 0);
+			};
+			self.containsPaddedPoint = function (x, y, xPad, yPad) {
+				return (x >= _x - xPad && x <= (_x + _w + xPad)) && (y >= _y - yPad && y <= (_y + _h + yPad));
+			};
 		};
+
 		function drawObjects() {
 			clearCanvas('mainCanvas');
 			for (var i = 0; i < drawingObjects.length; i++) {
