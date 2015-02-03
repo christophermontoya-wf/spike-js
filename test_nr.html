@@ -26,6 +26,7 @@
 		var drawMode = true;
 		var cursor = 'default';
 		var translocating = false;
+
 		var simpleRect = function(x, y, width, height) {
 			var self = this;
 
@@ -75,11 +76,11 @@
 			self.setStrokeColor = function (value) { return setter('strokeColor', value); };
 			self.setFillColor = function (value) { return setter('fillColor', value); };
 			self.setLineWidth = function (value) { return setter('lineWidth', value); };
-			self.containsPoint = function (x, y) {
-				return self.containsPaddedPoint(x, y, 2, 2);
-			};
 			self.containsPaddedPoint = function (x, y, xPad, yPad) {
 				return (x >= _x - xPad && x <= (_x + _width + xPad)) && (y >= _y - yPad && y <= (_y + _height + yPad));
+			};
+			self.containsPoint = function (x, y) {
+				return self.containsPaddedPoint(x, y, 2, 2);
 			};
 
 			self.draw = function (canvasId) {
@@ -246,7 +247,6 @@
 						// draw text
 						context.fillStyle = _labelTextColor;
 						context.fillText(_labelText, _x + 4, _y - 2);
-
 					}
 					context.beginPath();
 					// draw selection rect
@@ -285,11 +285,11 @@
 				}
 				return self;
 			};
-			self.containsPoint = function (x, y) {
-				return self.containsPaddedPoint(x, y, 0, 0);
-			};
 			self.containsPaddedPoint = function (x, y, xPad, yPad) {
 				return (x >= _x - xPad && x <= (_x + _w + xPad)) && (y >= _y - yPad && y <= (_y + _h + yPad));
+			};
+			self.containsPoint = function (x, y) {
+				return self.containsPaddedPoint(x, y, 0, 0);
 			};
 			self.clone = function () {
 				var newRect = new rect(_x, _y, _w, _h);
@@ -306,8 +306,8 @@
 				// _shadow = false;
 				// _dashed = false;
 				return newRect;
-			}
-			self.translocateRect = function (startX, endX, startY, endY, direction) {
+			};
+			self.translocate = function (startX, endX, startY, endY, direction) {
 				var resizeWidth = _w; 
 				var resizeHeight = _h; 
 				var resizeX = _x;
@@ -369,14 +369,15 @@
 
 				return self;
 			}
-		};   
-       	var ellipse = function(cx, cy, rx, ry) {
+		};
+
+		var ellipse = function(cx, cy, rx, ry) {
 			var self = this;
 
 			var _cx = Math.min(cx, cx + rx);
 			var _cy = Math.min(cy, cy + ry);
 			var _rx = Math.abs(rx);
-            var _ry = Math.abs(ry);
+			var _ry = Math.abs(ry);
 
 			var _lineWidth = 1;
 			var _strokeColor = 'black';
@@ -408,7 +409,7 @@
 				get: function () { return _labelText; },
 				set: function (value) { _labelText = value; }
 			});
-            
+
 			function setter(propname, value) {
 				self[propname] = value;
 				return self;
@@ -425,31 +426,31 @@
 				var context = canvas.getContext('2d');
 				if (_selected)
 				{
-                    context.beginPath();
+					context.beginPath();
 
-                    context.translate(cx-rx, cy-ry);
-                    context.scale(rx, ry);
-                    context.arc(1, 1, 1, 0, 2 * Math.PI, false);
+					context.translate(_cx-_rx, _cy-_ry);
+					context.scale(_rx, _ry);
+					context.arc(1, 1, 1, 0, 2 * Math.PI, false);
 
-                    context.restore(); // restore to original state
-                    if (_strokeColor) {
-                        context.strokeStyle = _strokeColor;
-                        context.stroke();
-                    }
-                    if (_fillColor) {
-                        context.fillStyle = _fillColor;
-                        context.fill();
-                    }
+					context.restore(); // restore to original state
+					if (_strokeColor) {
+						context.strokeStyle = _strokeColor;
+						context.stroke();
+					}
+					if (_fillColor) {
+						context.fillStyle = _fillColor;
+						context.fill();
+					}
 				}
 
 				return self;
 			};
-                    
-			self.containsPoint = function (x, y) {
-				return self.containsPaddedPoint(x, y, 0, 0);
-			};
+
 			self.containsPaddedPoint = function (x, y, xPad, yPad) {
 				return (x >= _x - xPad && x <= (_x + _w + xPad)) && (y >= _y - yPad && y <= (_y + _h + yPad));
+			};
+			self.containsPoint = function (x, y) {
+				return self.containsPaddedPoint(x, y, 0, 0);
 			};
 		};
 
@@ -505,12 +506,12 @@
 				currentStartX = getCanvasX(e.clientX);
 				currentStartY = getCanvasY(e.clientY);
 				drawing = true;
-			} // Translocating annotation
-			else if(currentSelectedRect && cursor != 'default') {
+			} else if(currentSelectedRect && cursor != 'default') {
+				// Translocating annotation
 				currentStartX = getCanvasX(e.clientX);
 				currentStartY = getCanvasY(e.clientY);
 				currentSelectedRect.drawHandles = false;
-				currentSelectedRect.dashed = true;					
+				currentSelectedRect.dashed = true;
 				translocating = true;
 			}
 		}
@@ -523,19 +524,17 @@
 				new rect(currentStartX, currentStartY, width, height)
 						.setStrokeColor(color)
 						.draw('mainCanvas');
-			}
-			else if (translocating && currentSelectedRect) {
+			} else if (translocating && currentSelectedRect) {
 				drawObjects();
 				currentSelectedRect.clone()
-					.translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
-					.setStrokeColor('blue')
-					.setSelected(true)
-					.setDrawHandles(false)
-					.setLabelTextColor('white')
-					.setShadow(true)
-					.draw('mainCanvas');
-			}
-			else if(!drawMode) {
+						.translocate(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+						.setStrokeColor('blue')
+						.setSelected(true)
+						.setDrawHandles(false)
+						.setLabelTextColor('white')
+						.setShadow(true)
+						.draw('mainCanvas');
+			} else if(!drawMode) {
 				if (currentSelectedRect && currentSelectedRect == getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 2, 2)) {
 					for (var key in currentSelectedRect.dragHandles) {
 						if (e && e.target && e.target.style) {
@@ -546,8 +545,7 @@
 						}
 						cursor = 'move';
 					}
-				}
-				else {
+				} else {
 					unSelectObjectsProperty('hovered');
 					var annotation = getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 0, 0);
 					if (annotation && !annotation.selected) {
@@ -574,12 +572,11 @@
 				currentSelectedRect = newRect;
 				drawingObjects.push(newRect);
 				drawObjects();
-			}
-			else if (translocating && currentSelectedRect) {
+			} else if (translocating && currentSelectedRect) {
 				translocating = false;
 				var currentSelectedIndex = drawingObjects.indexOf(currentSelectedRect);
 				var newRect = currentSelectedRect.clone()
-						.translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+						.translocate(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
 						.setSelected(true)
 						.setDrawHandles(true);
 				drawingObjects[currentSelectedIndex] = newRect;
@@ -653,12 +650,11 @@ dolorem eum fugiat quo voluptas nulla pariatur?
         onmousedown="startDrawRect(event);"
         onmouseup="stopDrawRect(event);"
         onmouseover="focusGained(event)"
-		onmouseout="focusLost(event)"></canvas>
+        onmouseout="focusLost(event)"></canvas>
 <div style="position: absolute; left: 690px; top: 25px; border: solid 1px black; height: 480px; width: 200px; font-family: Arial; font-size: 10px;">
 	Draw Mode: <input type="radio" name="drawMode" checked="checked" id="drawMode" onclick="drawModeChange(true);" />
 	Select Mode: <input type="radio" name="drawMode" id="selectMode" onclick="drawModeChange(false);"/><br />
-	Selected Text: <input type="text" id="lblText" name="lblText" style="position: relative; width: 100px; left: 10px; top: 10px; height: 15px;" 
-						value="Test" onchange="updateLabel(this);" />
+	Selected Text: <input type="text" id="lblText" name="lblText" style="position: relative; width: 100px; left: 10px; top: 10px; height: 15px;" value="Test" onchange="updateLabel(this);" />
 </div>
 </body>
 </html>
