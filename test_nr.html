@@ -5,11 +5,82 @@
 		body {
 			margin: 25px;
 			padding: 0;
+			font-family: Arial;
+			font-size: 12;
 		}
 		canvas {
 			position: absolute;
 			left: 25px;
 			top: 25px;
+		}
+		.card-class-unselected {
+			position: relative;
+			margin-top: 1px;
+			padding: 5px 5px 5px 5px;
+			width: 170px;
+			height: 40px;
+			border: solid 1px lightgray;
+		}
+		.card-class-selected {
+			position: relative;
+			margin-top: 1px;
+			padding: 5px 5px 5px 5px;
+			width: 170px;
+			height: 35px;
+			border: solid 1px darkblue;
+		}
+		.cardTxt-on {
+			position: absolute;
+			display: inline;
+			width: 135px;
+			height: 15px;
+			line-height: 15px;
+			top: 4px;
+			left: 25px;
+			font-family: Arial;
+			font-size: 12px;
+			visibility: visible;
+		}
+		.cardTxt-off {
+			position: absolute;
+			display: none;
+			top: 4px;
+			left: 25px;
+			width: 135px;
+			visibility: hidden;
+		}
+		.cardLabel-on {
+			position: absolute;
+			display: inline;
+			top: 4px;
+			left: 25px;
+			height: 16px;
+			width: 135px;
+			font-family: Arial;
+			font-size: 12px;
+			visibility: visible;
+		}
+		.cardLabel-off {
+			position: absolute;
+			display: none;
+			top: 4px;
+			left: 25px;
+			width: 135px;
+			visibility: hidden;
+		}
+		.card-icon {
+			position: absolute;
+			top: 5px;
+			left: 2px;
+			height: 16px;
+			width: 16px;
+		}
+		.markup-sub-info {
+			position: absolute;
+			top: 35px;
+			left: 25px;
+			font-family: Arial;
+			font-size: 7px;
 		}
 	</style>
 	<script>
@@ -20,7 +91,7 @@
 		var drawing = false;
 		var offsetX = -25;
 		var offsetY = -25;
-		var minHeight = 15;
+		var minHeight = 13;
 		var minWidth = 20;
 		var color = null;
 		var drawMode = true;
@@ -124,7 +195,7 @@
 			var _visible = true;
 			var _shadow = false;
 			var _dashed = false;
-
+			var _createdDate = new Date();
 			var _drags = {};
 
 			Object.defineProperty(self, 'x', {
@@ -194,6 +265,9 @@
 			Object.defineProperty(self, 'dashed', {
 				get: function () { return _dashed; },
 				set: function (value) { _dashed = value; }
+			});
+			Object.defineProperty(self, 'createdDate', {
+				get: function() { return _createdDate; }
 			});
 
 			function setter(propname, value) {
@@ -370,7 +444,6 @@
 				return self;
 			}
 		};
-
 		var ellipse = function(cx, cy, rx, ry) {
 			var self = this;
 
@@ -477,14 +550,46 @@
 		function selectAnnotation(e) {
 			if (!drawMode) {
 				var annotation = getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 0, 0);
-				if (annotation && annotation != currentSelectedRect) {
-					unSelectObjectsProperty('selected');
-					annotation.selected = true;
-					annotation.drawHandles = !drawMode;
-					currentSelectedRect = annotation;
-					document.getElementById('lblText').value = annotation.labelText;
-					drawObjects();
+				if (annotation) {
+					var index = drawingObjects.indexOf(annotation);
+					selectAnnotationFromCard(index);
 				}
+			}
+		}
+		function selectAnnotationFromCard(i) {
+			if (drawMode)
+				changeToMode('select');
+
+			var annotation = drawingObjects[i];
+			if (annotation != currentSelectedRect) {
+				// unselect the previous
+				var prevIndex = drawingObjects.indexOf(currentSelectedRect);
+				if (prevIndex >= 0) {
+					var prevCard = document.getElementById('cardContainer_' + prevIndex);
+					prevCard.className = 'card-class-unselected';
+					var prevTxt = document.getElementById('cardTxt_' + prevIndex);
+					prevTxt.className = 'cardTxt-off';
+					var prevLbl = document.getElementById('cardLabel_' + prevIndex);
+					prevLbl.className = 'cardLabel-on';
+				}
+			}
+
+			if (annotation && annotation != currentSelectedRect) {
+				var card = document.getElementById('cardContainer_' + i);
+				// card.select();
+				card.focus();
+				card.className = 'card-class-selected';
+				var prevTxt = document.getElementById('cardTxt_' + i);
+				prevTxt.className = 'cardTxt-on';
+				prevTxt.select();
+				prevTxt.focus();
+				var prevLbl = document.getElementById('cardLabel_' + i);
+				prevLbl.className = 'cardLabel-off';
+				unSelectObjectsProperty('selected');
+				annotation.selected = true;
+				annotation.drawHandles = true;
+				currentSelectedRect = annotation;
+				drawObjects();
 			}
 		}
 		function getAnnotation(x, y, padX, padY) {
@@ -515,7 +620,6 @@
 				translocating = true;
 			}
 		}
-
 		function showTempRect(e) {
 			if (drawing) {
 				var width = getCanvasX(e.clientX) - currentStartX - 1;
@@ -568,10 +672,13 @@
 					return;
 				}
 				unSelectObjectsProperty('selected');
-				var newRect = new rect(currentStartX, currentStartY, width, height).setStrokeColor(color).setLabelText('Test').setSelected(true);
-				currentSelectedRect = newRect;
+				var newRect = new rect(currentStartX, currentStartY, width, height).setStrokeColor(color).setLabelText('Annotation').setSelected(true);
+				// currentSelectedRect = newRect;
 				drawingObjects.push(newRect);
 				drawObjects();
+				loadCards();
+				var currentIndex = drawingObjects.length -1;
+				selectAnnotationFromCard(currentIndex);
 			} else if (translocating && currentSelectedRect) {
 				translocating = false;
 				var currentSelectedIndex = drawingObjects.indexOf(currentSelectedRect);
@@ -597,13 +704,13 @@
 				event.target.style.cursor = cursor;
 			}
 		}
-		function checkKeyCombinations(e) {
-			// put in ctrl+z for undo and do a drawingObjects.pop();
-		}
-		function updateLabel(p) {
+		function updateLabel(p, i, txt) {
 			if (currentSelectedRect) {
-				currentSelectedRect.labelText = p.value;
-				drawObjects();
+				if (drawingObjects[i] == currentSelectedRect) {
+					currentSelectedRect.labelText = txt.value;
+					document.getElementById('cardLabel_' + i).textContent = txt.value;
+					drawObjects();
+				}
 			}
 		}
 		function drawModeChange(c) {
@@ -621,6 +728,93 @@
 			// TODO: Refactor these based on need
 			return y + offsetY;
 		}
+
+		function loadCards() {
+			var cardSpace = document.getElementById('cardSpace');
+			while(cardSpace.firstChild) {
+				cardSpace.removeChild(cardSpace.firstChild);
+			}
+			for (var i = 0; i < drawingObjects.length; i++) {
+				var card = document.createElement('div');
+				card.setAttribute('name', 'cardContainer_' + i);
+				card.setAttribute('id', 'cardContainer_' + i);
+				card.className = 'card-class-unselected';
+				card.setAttribute('onclick', 'selectAnnotationFromCard("' + i + '");')
+				var cardTxt = document.createElement('input');
+				var cardLabel = document.createElement('span');
+				cardTxt.setAttribute('onkeyup', 'updateLabel(event, "' + i + '", this);');
+				cardTxt.setAttribute('onfocus', 'selectAnnotationFromCard("' + i + '");');
+				cardTxt.setAttribute('name', 'cardTxt_' + i);
+				cardTxt.setAttribute('id', 'cardTxt_' + i);
+				cardTxt.className = 'cardTxt-off';
+				cardTxt.value = drawingObjects[i].labelText;
+				cardLabel.setAttribute('name', 'cardLabel_' + i);
+				cardLabel.setAttribute('id', 'cardLabel_' + i);
+				cardLabel.textContent = drawingObjects[i].labelText;
+				cardLabel.className = 'cardLabel-on';
+				var icon = document.createElement('img');
+				icon.className = 'card-icon';
+				icon.setAttribute('src', 'markup_icon.png');
+				var annotationInfo = document.createElement('span');
+				annotationInfo.textContent = 'Created By: Todd Kaji on ' + drawingObjects[i].createdDate.toLocaleString();
+				annotationInfo.className = 'markup-sub-info';
+				card.appendChild(icon);
+				card.appendChild(cardLabel);
+				card.appendChild(cardTxt);
+				card.appendChild(annotationInfo);
+				cardSpace.appendChild(card);
+			}
+		}
+
+		function changeToMode(mode) {
+			if (mode == 'select') {
+				drawMode = false;
+				document.getElementById('selectMode').checked = true;
+				document.getElementById('drawMode').checked = false;
+				if (currentSelectedRect) {
+					currentSelectedRect.drawHandles = true;
+					drawObjects();
+				}
+			}
+			else if (mode == 'draw') {
+				drawMode = true;
+				document.getElementById('selectMode').checked = false;
+				document.getElementById('drawMode').checked = true;
+				if (currentSelectedRect) {
+					currentSelectedRect.drawHandles = false;
+					drawObjects();
+				}
+			
+				cursor = 'crosshair';
+				document.getElementById('mainCanvas').style.cursor = cursor;				
+			}
+		}
+		function checkKeyCombinations(e) {
+			switch (e.key) {
+				case 'Del':
+				case 'Delete': // delete
+					var currentSelectedIndex = drawingObjects.indexOf(currentSelectedRect);
+					if (currentSelectedIndex >= 0) {
+						drawingObjects.splice(currentSelectedIndex, 1);
+						drawObjects();
+					}
+					break;
+				case 'd':
+				case 'D':
+					if (e.ctrlKey) {
+						if (drawMode) {
+							changeToMode('select');
+						}
+						else {
+							changeToMode('draw');
+						}
+					}
+					break;
+				default:
+					console.log(e.keyCode);
+			}
+		}
+		document.addEventListener('keydown', checkKeyCombinations);
 	</script>
 </head>
 <body>
@@ -651,10 +845,13 @@ dolorem eum fugiat quo voluptas nulla pariatur?
         onmouseup="stopDrawRect(event);"
         onmouseover="focusGained(event)"
         onmouseout="focusLost(event)"></canvas>
-<div style="position: absolute; left: 690px; top: 25px; border: solid 1px black; height: 480px; width: 200px; font-family: Arial; font-size: 10px;">
-	Draw Mode: <input type="radio" name="drawMode" checked="checked" id="drawMode" onclick="drawModeChange(true);" />
-	Select Mode: <input type="radio" name="drawMode" id="selectMode" onclick="drawModeChange(false);"/><br />
-	Selected Text: <input type="text" id="lblText" name="lblText" style="position: relative; width: 100px; left: 10px; top: 10px; height: 15px;" value="Test" onchange="updateLabel(this);" />
+<div style="position: absolute; left: 690px; top: 25px; border: solid 1px black; height: 480px; width: 200px; font-family: Arial; font-size: 10px; overflow: auto;">
+	<div style="position: relative; height: 40px; width: 200px;">
+		Draw Mode: <input type="radio" name="drawMode" checked="checked" id="drawMode" onclick="drawModeChange(true);" />
+		Select Mode: <input type="radio" name="drawMode" id="selectMode" onclick="drawModeChange(false);"/><br />
+	</div>
+	<div id="cardSpace" name="cardSpace" style="position: relative; height: 430px; width: 186px; padding: 2px 2px 2px 2px; overlfow: auto; margin: 2px 2px 2px 2px;">
+	</div>
 </div>
 </body>
 </html>
