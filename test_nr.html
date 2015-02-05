@@ -464,7 +464,7 @@
                     }
                     if (_dashed) {
                         context.setLineDash([6, 3]);
-                        context.strokeStyle = 'lightgray';
+                        context.strokeStyle = 'gray';
                         context.stroke();
                     }
                     if (_selected && _drawHandles) {
@@ -577,9 +577,15 @@
             var _lineWidth = 1;
             var _strokeColor = 'black';
             var _fillColor = null;
+            var _hovered = false;
             var _selected = false;
             var _labelText = '';
             var _visible = true;
+            var _drawHandles = false;
+            var _labelTextColor = 'black';
+            var _createdDate = new Date();
+            var _shadow = false;
+            var _drags = {};
 
             Object.defineProperty(self, 'lineWidth', {
                 get: function () {
@@ -607,7 +613,14 @@
                     _fillColor = value;
                 }
             });
-
+            Object.defineProperty(self, 'hovered', {
+                get: function () {
+                    return _hovered;
+                },
+                set: function (value) {
+                    _hovered = value;
+                }
+            });
             Object.defineProperty(self, 'selected', {
                 get: function () {
                     return _selected;
@@ -616,7 +629,22 @@
                     _selected = value;
                 }
             });
-
+            Object.defineProperty(self, 'dragHandles', {
+                get: function () {
+                    return _drags;
+                }
+            });
+            Object.defineProperty(self, 'drawHandles', {
+                get: function () {
+                    return _drawHandles;
+                },
+                set: function (value) {
+                    _drawHandles = value;
+                    if (value) {
+                        _drags = setDrags();
+                    }
+                }
+            });
             Object.defineProperty(self, 'labelText', {
                 get: function () {
                     return _labelText;
@@ -625,10 +653,36 @@
                     _labelText = value;
                 }
             });
+            Object.defineProperty(self, 'createdDate', {
+                get: function () {
+                    return _createdDate;
+                }
+            });
+            Object.defineProperty(self, 'shadow', {
+                get: function () {
+                    return _shadow;
+                },
+                set: function (value) {
+                    _shadow = value;
+                }
+            });
 
             function setter(propname, value) {
                 self[propname] = value;
                 return self;
+            }
+
+            function setDrags() {
+                return {
+                    'nw': new simpleRect(_cx - 2, _cy - 2, 5, 5),
+                    'n': new simpleRect(_cx + (_rx / 2) - 2, _cy - 2, 5, 5),
+                    'ne': new simpleRect(_cx + _rx - 2, _cy - 2, 5, 5),
+                    'e': new simpleRect(_cx + _rx - 2, _cy + (_ry / 2) - 2, 5, 5),
+                    'se': new simpleRect(_cx + _rx - 2, _cy + _ry - 2, 5, 5),
+                    's': new simpleRect(_cx + (_rx / 2) - 2, _cy + _ry - 2, 5, 5),
+                    'sw': new simpleRect(_cx - 2, _cy + _ry - 2, 5, 5),
+                    'w': new simpleRect(_cx - 2, _cy + (_ry / 2) - 2, 5, 5)
+                };
             }
 
             self.setStrokeColor = function (value) {
@@ -643,8 +697,23 @@
             self.setSelected = function (value) {
                 return setter('selected', value);
             };
+            self.setHovered = function (value) {
+                return setter('hovered', value);
+            };
             self.setLabelText = function (value) {
                 return setter('labelText', value);
+            };
+            self.setLabelTextColor = function (value) {
+                return setter('labelTextColor', value);
+            };            
+            self.setDrawHandles = function (value) {
+                if (value) {
+                    _drags = setDrags();
+                }
+                return setter('drawHandles', value);
+            };
+            self.setShadow = function (value) {
+                return setter('shadow', value);
             };
 
             self.draw = function (canvasId) {
@@ -656,6 +725,29 @@
                 var sx = _cx + half_width;
                 var sy = _cy + half_height;
                 if (_visible) {
+                    if (_hovered || _selected) {
+                        context.beginPath();
+                        context.font = '12px Arial';
+                        var measured = context.measureText(_labelText);
+                        // draw label rect
+                        var labelHeight = 16;
+                        var labelWidth = measured.width + 12;
+                        context.rect(_cx, _cy - labelHeight, labelWidth, labelHeight);
+                        context.fillStyle = _strokeColor;
+                        context.fill();
+                        context.beginPath();
+                        // draw text
+                        context.fillStyle = _labelTextColor;
+                        context.fillText(_labelText, _cx + 4, _cy - 2);
+
+                        context.beginPath();
+                       	context.rect(_cx, _cy, _rx, _ry);
+                        context.setLineDash([6, 3]);
+                        context.strokeStyle = 'gray';
+                        context.stroke();
+                        context.setLineDash([]);
+                    }
+
                     context.beginPath();
                     if (isEllipseSupported(sx, sy, half_width, half_height, 0)) {
                         context.ellipse(sx, sy, half_width, half_height, 0, 0, 2 * Math.PI, false);
@@ -673,17 +765,105 @@
                         context.fillStyle = _fillColor;
                         context.fill();
                     }
+                    if (_selected && _drawHandles) {
+                        for (var key in _drags) {
+                            _drags[key].clear(canvasId).draw(canvasId);
+                        }
+                    }
+                    context.setLineDash([]);
+                    context.shadowBlur = 0;
+                    context.shadowColor = null;
+                    context.shadowOffsetX = 0;
+                    context.shadowOffsetY = 0;
+                    context.strokeStyle = null;
                 }
 
                 return self;
             };
 
             self.containsPaddedPoint = function (x, y, xPad, yPad) {
-                return (x >= _x - xPad && x <= (_x + _w + xPad)) && (y >= _y - yPad && y <= (_y + _h + yPad));
+                return (x >= _cx - xPad && x <= (_cx + _rx + xPad)) && (y >= _cy - yPad && y <= (_cy + _ry + yPad));
             };
             self.containsPoint = function (x, y) {
                 return self.containsPaddedPoint(x, y, 0, 0);
             };
+
+            self.clone = function () {
+                var newRect = new ellipse(_cx, _cy, _rx, _ry);
+                newRect.strokeColor = _strokeColor;
+                newRect.fillColor = _fillColor;
+                newRect.lineWidth = _lineWidth;
+                newRect.labelText = _labelText;
+                newRect.labelTextColor = _labelTextColor;
+                // things we don't think we need to copy...
+                // _selected = false;
+                // _hovered = false;
+                // _drawHandles = false;
+                // _visible = true;
+                // _shadow = false;
+                // _dashed = false;
+                return newRect;
+            };
+            self.translocate = function (startX, endX, startY, endY, direction) {
+                var resizeWidth = _rx;
+                var resizeHeight = _ry;
+                var resizeX = _cx;
+                var resizeY = _cy;
+
+                switch (direction) {
+                case 'nw-resize':
+                    resizeY += endY - startY;
+                    resizeX += endX - startX;
+                    resizeWidth += startX - resizeX;
+                    resizeHeight += startY - resizeY;
+                    break;
+                case 'ne-resize':
+                    resizeY += endY - startY;
+                    resizeWidth += endX - startX;
+                    resizeHeight += startY - resizeY;
+                    break;
+                case 'sw-resize':
+                    resizeX += endX - startX;
+                    resizeWidth += startX - resizeX;
+                    resizeHeight += endY - startY;
+                    break;
+                case 'se-resize':
+                    resizeWidth += endX - startX;
+                    resizeHeight += endY - startY;
+                    break;
+                case 'n-resize':
+                    resizeY += endY - startY;
+                    resizeHeight += startY - resizeY;
+                    break;
+                case 's-resize':
+                    resizeHeight += endY - startY;
+                    break;
+                case 'w-resize':
+                    resizeX += endX - startX;
+                    resizeWidth += startX - resizeX;
+                    break;
+                case 'e-resize':
+                    resizeWidth += endX - startX;
+                    break;
+                case 'move':
+                    resizeX += endX - startX;
+                    resizeY += endY - startY;
+                    break;
+                }
+
+                if (resizeWidth < minWidth)
+                    resizeWidth = minWidth;
+
+                if (resizeHeight < minHeight)
+                    resizeHeight = minHeight;
+
+                _cx = resizeX;
+                _cy = resizeY;
+                _rx = resizeWidth;
+                _ry = resizeHeight;
+
+                return self;
+            }
         };
 
         function drawObjects() {
@@ -724,9 +904,9 @@
                 changeToMode('select');
 
             var annotation = drawingObjects[i];
-            if (annotation != currentSelectedRect) {
+            if (annotation != currentSelectedShape) {
                 // unselect the previous
-                var prevIndex = drawingObjects.indexOf(currentSelectedRect);
+                var prevIndex = drawingObjects.indexOf(currentSelectedShape);
                 if (prevIndex >= 0) {
                     var prevCard = document.getElementById('cardContainer_' + prevIndex);
                     prevCard.className = 'card-class-unselected';
@@ -737,7 +917,7 @@
                 }
             }
 
-            if (annotation && annotation != currentSelectedRect) {
+            if (annotation && annotation != currentSelectedShape) {
                 var card = document.getElementById('cardContainer_' + i);
                 // card.select();
                 card.focus();
@@ -751,7 +931,7 @@
                 unSelectObjectsProperty('selected');
                 annotation.selected = true;
                 annotation.drawHandles = true;
-                currentSelectedRect = annotation;
+                currentSelectedShape = annotation;
                 drawObjects();
             }
         }
@@ -807,7 +987,7 @@
             } else if (translocating && currentSelectedShape) {
                 drawObjects();
                 currentSelectedShape.clone()
-                    .translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+                    .translocate(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
                     .setStrokeColor('blue')
                     .setSelected(true)
                     .setDrawHandles(false)
@@ -846,10 +1026,10 @@
                 new rect(currentStartX, currentStartY, width, height)
                     .setStrokeColor(color)
                     .draw('mainCanvas');
-            } else if (translocating && currentSelectedRect) {
+            } else if (translocating && currentSelectedShape) {
                 drawObjects();
                 currentSelectedShape.clone()
-                    .translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+                    .translocate(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
                     .setStrokeColor('blue')
                     .setSelected(true)
                     .setDrawHandles(false)
@@ -898,15 +1078,17 @@
                     return;
                 }
                 unSelectObjectsProperty('selected');
-                var newRect = new rect(currentStartX, currentStartY, width, height).setStrokeColor(color).setLabelText('Test').setSelected(true);
-                currentSelectedShape = newRect;
+                var newRect = new rect(currentStartX, currentStartY, width, height).setStrokeColor(color).setLabelText('Annotation').setSelected(true);
                 drawingObjects.push(newRect);
                 drawObjects();
+				loadCards();
+				var currentIndex = drawingObjects.length -1;
+				selectAnnotationFromCard(currentIndex);                
             } else if (translocating && currentSelectedShape) {
                 translocating = false;
-                var currentSelectedIndex = drawingObjects.indexOf(currentSelectedRect);
-                var newRect = currentSelectedRect.clone()
-                    .translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+                var currentSelectedIndex = drawingObjects.indexOf(currentSelectedShape);
+                var newRect = currentSelectedShape.clone()
+                    .translocate(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
                     .setSelected(true)
                     .setDrawHandles(true);
                 drawingObjects[currentSelectedIndex] = newRect;
@@ -927,15 +1109,18 @@
                 unSelectObjectsProperty('selected');
                 var newEllipse = new ellipse(currentStartX, currentStartY, width, height)
                     .setStrokeColor(color)
+                    .setLabelText('Annotation')
                     .draw('mainCanvas');
-                currentSelectedShape = newEllipse;
                 drawingObjects.push(newEllipse);
                 drawObjects();
+				loadCards();
+				var currentIndex = drawingObjects.length -1;
+				selectAnnotationFromCard(currentIndex);                   
             } else if (translocating && currentSelectedShape) {
                 translocating = false;
                 var currentSelectedIndex = drawingObjects.indexOf(currentSelectedShape);
                 var newRect = currentSelectedShape.clone()
-                    .translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+                    .translocate(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
                     .setSelected(true)
                     .setDrawHandles(true);
                 drawingObjects[currentSelectedIndex] = newRect;
@@ -960,9 +1145,9 @@
         }
 
         function updateLabel(p, i, txt) {
-            if (currentSelectedRect) {
-                if (drawingObjects[i] == currentSelectedRect) {
-                    currentSelectedRect.labelText = txt.value;
+            if (currentSelectedShape) {
+                if (drawingObjects[i] == currentSelectedShape) {
+                    currentSelectedShape.labelText = txt.value;
                     document.getElementById('cardLabel_' + i).textContent = txt.value;
                     drawObjects();
                 }
@@ -1047,16 +1232,16 @@
                 drawMode = false;
                 document.getElementById('selectMode').checked = true;
                 document.getElementById('drawMode').checked = false;
-                if (currentSelectedRect) {
-                    currentSelectedRect.drawHandles = true;
+                if (currentSelectedShape) {
+                    currentSelectedShape.drawHandles = true;
                     drawObjects();
                 }
             } else if (mode == 'draw') {
                 drawMode = true;
                 document.getElementById('selectMode').checked = false;
                 document.getElementById('drawMode').checked = true;
-                if (currentSelectedRect) {
-                    currentSelectedRect.drawHandles = false;
+                if (currentSelectedShape) {
+                    currentSelectedShape.drawHandles = false;
                     drawObjects();
                 }
 
@@ -1069,7 +1254,7 @@
             switch (e.key) {
             case 'Del':
             case 'Delete': // delete
-                var currentSelectedIndex = drawingObjects.indexOf(currentSelectedRect);
+                var currentSelectedIndex = drawingObjects.indexOf(currentSelectedShape);
                 if (currentSelectedIndex >= 0) {
                     drawingObjects.splice(currentSelectedIndex, 1);
                     drawObjects();
