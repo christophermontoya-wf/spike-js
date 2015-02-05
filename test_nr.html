@@ -1,515 +1,665 @@
 <!DOCTYPE HTML>
 <html>
+
 <head>
-	<style>
-		body {
-			margin: 25px;
-			padding: 0;
-			font-family: Arial;
-			font-size: 12;
-		}
-		canvas {
-			position: absolute;
-			left: 25px;
-			top: 25px;
-		}
-		.card-class-unselected {
-			position: relative;
-			margin-top: 1px;
-			padding: 5px 5px 5px 5px;
-			width: 170px;
-			height: 40px;
-			border: solid 1px lightgray;
-		}
-		.card-class-selected {
-			position: relative;
-			margin-top: 1px;
-			padding: 5px 5px 5px 5px;
-			width: 170px;
-			height: 35px;
-			border: solid 1px darkblue;
-		}
-		.cardTxt-on {
-			position: absolute;
-			display: inline;
-			width: 135px;
-			height: 15px;
-			line-height: 15px;
-			top: 4px;
-			left: 25px;
-			font-family: Arial;
-			font-size: 12px;
-			visibility: visible;
-		}
-		.cardTxt-off {
-			position: absolute;
-			display: none;
-			top: 4px;
-			left: 25px;
-			width: 135px;
-			visibility: hidden;
-		}
-		.cardLabel-on {
-			position: absolute;
-			display: inline;
-			top: 4px;
-			left: 25px;
-			height: 16px;
-			width: 135px;
-			font-family: Arial;
-			font-size: 12px;
-			visibility: visible;
-		}
-		.cardLabel-off {
-			position: absolute;
-			display: none;
-			top: 4px;
-			left: 25px;
-			width: 135px;
-			visibility: hidden;
-		}
-		.card-icon {
-			position: absolute;
-			top: 5px;
-			left: 2px;
-			height: 16px;
-			width: 16px;
-		}
-		.markup-sub-info {
-			position: absolute;
-			top: 35px;
-			left: 25px;
-			font-family: Arial;
-			font-size: 7px;
-		}
-	</style>
-	<script>
-		var drawingObjects = [];
-		var currentSelectedShape = null;
-		var currentStartX = -1;
-		var currentStartY = -1;
-		var drawing = false;
-		var offsetX = -25;
-		var offsetY = -25;
-		var minHeight = 13;
-		var minWidth = 20;
-		var color = null;
-		var drawMode = true;
-		var cursor = 'default';
-		var translocating = false;
-      		var selectedShape = 'Rectangle';
-		var simpleRect = function(x, y, width, height) {
-			var self = this;
+    <style>
+        body {
+            margin: 25px;
+            padding: 0;
+            font-family: Arial;
+            font-size: 12;
+        }
+        
+        canvas {
+            position: absolute;
+            left: 25px;
+            top: 25px;
+        }
+        
+        .card-class-unselected {
+            position: relative;
+            margin-top: 1px;
+            padding: 5px 5px 5px 5px;
+            width: 170px;
+            height: 40px;
+            border: solid 1px lightgray;
+        }
+        
+        .card-class-selected {
+            position: relative;
+            margin-top: 1px;
+            padding: 5px 5px 5px 5px;
+            width: 170px;
+            height: 35px;
+            border: solid 1px darkblue;
+        }
+        
+        .cardTxt-on {
+            position: absolute;
+            display: inline;
+            width: 135px;
+            height: 15px;
+            line-height: 15px;
+            top: 4px;
+            left: 25px;
+            font-family: Arial;
+            font-size: 12px;
+            visibility: visible;
+        }
+        
+        .cardTxt-off {
+            position: absolute;
+            display: none;
+            top: 4px;
+            left: 25px;
+            width: 135px;
+            visibility: hidden;
+        }
+        
+        .cardLabel-on {
+            position: absolute;
+            display: inline;
+            top: 4px;
+            left: 25px;
+            height: 16px;
+            width: 135px;
+            font-family: Arial;
+            font-size: 12px;
+            visibility: visible;
+        }
+        
+        .cardLabel-off {
+            position: absolute;
+            display: none;
+            top: 4px;
+            left: 25px;
+            width: 135px;
+            visibility: hidden;
+        }
+        
+        .card-icon {
+            position: absolute;
+            top: 5px;
+            left: 2px;
+            height: 16px;
+            width: 16px;
+        }
+        
+        .markup-sub-info {
+            position: absolute;
+            top: 35px;
+            left: 25px;
+            font-family: Arial;
+            font-size: 7px;
+        }
+    </style>
+    <script>
+        var drawingObjects = [];
+        var currentSelectedShape = null;
+        var currentStartX = -1;
+        var currentStartY = -1;
+        var drawing = false;
+        var offsetX = -25;
+        var offsetY = -25;
+        var minHeight = 13;
+        var minWidth = 20;
+        var color = null;
+        var drawMode = true;
+        var cursor = 'default';
+        var translocating = false;
+        var selectedShape = 'Rectangle';
+        var simpleRect = function (x, y, width, height) {
+            var self = this;
 
-			var _x = Math.min(x, x + width);
-			var _y = Math.min(y, y + height);
-			var _width = Math.abs(width);
-			var _height = Math.abs(height);
+            var _x = Math.min(x, x + width);
+            var _y = Math.min(y, y + height);
+            var _width = Math.abs(width);
+            var _height = Math.abs(height);
 
-			var _lineWidth = 1;
-			var _strokeColor = 'black';
-			var _fillColor = null;
+            var _lineWidth = 1;
+            var _strokeColor = 'black';
+            var _fillColor = null;
 
-			Object.defineProperty(self, 'x', {
-				get: function () { return _x; },
-				set: function (value) { _x = value; }
-			});
-			Object.defineProperty(self, 'y', {
-				get: function () { return _y; },
-				set: function (value) { _y = value; }
-			});
-			Object.defineProperty(self, 'width', {
-				get: function () { return _width; },
-				set: function (value) { _width = value; }
-			});
-			Object.defineProperty(self, 'height', {
-				get: function () { return _height; },
-				set: function (value) { _height = value; }
-			});
-			Object.defineProperty(self, 'lineWidth', {
-				get: function () { return _lineWidth; },
-				set: function (value) { _lineWidth = value; }
-			});
-			Object.defineProperty(self, 'strokeColor', {
-				get: function () { return _strokeColor; },
-				set: function (value) { _strokeColor = value; }
-			});
-			Object.defineProperty(self, 'fillColor', {
-				get: function () { return _fillColor; },
-				set: function (value) { _fillColor = value; }
-			});
+            Object.defineProperty(self, 'x', {
+                get: function () {
+                    return _x;
+                },
+                set: function (value) {
+                    _x = value;
+                }
+            });
+            Object.defineProperty(self, 'y', {
+                get: function () {
+                    return _y;
+                },
+                set: function (value) {
+                    _y = value;
+                }
+            });
+            Object.defineProperty(self, 'width', {
+                get: function () {
+                    return _width;
+                },
+                set: function (value) {
+                    _width = value;
+                }
+            });
+            Object.defineProperty(self, 'height', {
+                get: function () {
+                    return _height;
+                },
+                set: function (value) {
+                    _height = value;
+                }
+            });
+            Object.defineProperty(self, 'lineWidth', {
+                get: function () {
+                    return _lineWidth;
+                },
+                set: function (value) {
+                    _lineWidth = value;
+                }
+            });
+            Object.defineProperty(self, 'strokeColor', {
+                get: function () {
+                    return _strokeColor;
+                },
+                set: function (value) {
+                    _strokeColor = value;
+                }
+            });
+            Object.defineProperty(self, 'fillColor', {
+                get: function () {
+                    return _fillColor;
+                },
+                set: function (value) {
+                    _fillColor = value;
+                }
+            });
 
-			function setter(propname, value) {
-				self[propname] = value;
-				return self;
-			}
+            function setter(propname, value) {
+                self[propname] = value;
+                return self;
+            }
 
-			self.setStrokeColor = function (value) { return setter('strokeColor', value); };
-			self.setFillColor = function (value) { return setter('fillColor', value); };
-			self.setLineWidth = function (value) { return setter('lineWidth', value); };
-			self.containsPaddedPoint = function (x, y, xPad, yPad) {
-				return (x >= _x - xPad && x <= (_x + _width + xPad)) && (y >= _y - yPad && y <= (_y + _height + yPad));
-			};
-			self.containsPoint = function (x, y) {
-				return self.containsPaddedPoint(x, y, 2, 2);
-			};
+            self.setStrokeColor = function (value) {
+                return setter('strokeColor', value);
+            };
+            self.setFillColor = function (value) {
+                return setter('fillColor', value);
+            };
+            self.setLineWidth = function (value) {
+                return setter('lineWidth', value);
+            };
+            self.containsPaddedPoint = function (x, y, xPad, yPad) {
+                return (x >= _x - xPad && x <= (_x + _width + xPad)) && (y >= _y - yPad && y <= (_y + _height + yPad));
+            };
+            self.containsPoint = function (x, y) {
+                return self.containsPaddedPoint(x, y, 2, 2);
+            };
 
-			self.draw = function (canvasId) {
-				var canvas = document.getElementById(canvasId);
-				var context = canvas.getContext('2d');
-				context.beginPath();
-				// draw selection rect
-				context.rect(_x, _y, _width, _height);
-				context.lineWidth = _lineWidth;
-				if (_strokeColor) {
-					context.strokeStyle = _strokeColor;
-					context.stroke();
-				}
-				if (_fillColor) {
-					context.fillStyle = _fillColor;
-					context.fill();
-				}
-				return self;
-			};
-			self.clear = function(canvasId) {
-				var canvas = document.getElementById(canvasId);
-				var context = canvas.getContext('2d');
-				context.clearRect(_x, _y, _width, _height);
-				return self;
-			};
-		};
-		var rect = function(x, y, w, h) {
-			var self = this;
-			var _x = Math.min(x, x + w);
-			var _y = Math.min(y, y + h);
-			var _w = Math.abs(w);
-			var _h = Math.abs(h);
-			var _lineWidth = 1;
-			var _strokeColor = 'black';
-			var _fillColor = null;
-			var _selected = false;
-			var _hovered = false;
-			var _labelText = '';
-			var _labelTextColor = 'black';
-			var _drawHandles = false;
-			var _visible = true;
-			var _shadow = false;
-			var _dashed = false;
-			var _createdDate = new Date();
-			var _drags = {};
+            self.draw = function (canvasId) {
+                var canvas = document.getElementById(canvasId);
+                var context = canvas.getContext('2d');
+                context.beginPath();
+                // draw selection rect
+                context.rect(_x, _y, _width, _height);
+                context.lineWidth = _lineWidth;
+                if (_strokeColor) {
+                    context.strokeStyle = _strokeColor;
+                    context.stroke();
+                }
+                if (_fillColor) {
+                    context.fillStyle = _fillColor;
+                    context.fill();
+                }
+                return self;
+            };
+            self.clear = function (canvasId) {
+                var canvas = document.getElementById(canvasId);
+                var context = canvas.getContext('2d');
+                context.clearRect(_x, _y, _width, _height);
+                return self;
+            };
+        };
+        var rect = function (x, y, w, h) {
+            var self = this;
+            var _x = Math.min(x, x + w);
+            var _y = Math.min(y, y + h);
+            var _w = Math.abs(w);
+            var _h = Math.abs(h);
+            var _lineWidth = 1;
+            var _strokeColor = 'black';
+            var _fillColor = null;
+            var _selected = false;
+            var _hovered = false;
+            var _labelText = '';
+            var _labelTextColor = 'black';
+            var _drawHandles = false;
+            var _visible = true;
+            var _shadow = false;
+            var _dashed = false;
+            var _createdDate = new Date();
+            var _drags = {};
 
-			Object.defineProperty(self, 'x', {
-				get: function () { return _x; },
-				set: function (value) { _x = value; }
-			});
-			Object.defineProperty(self, 'y', {
-				get: function () { return _y; },
-				set: function (value) { _y = value; }
-			});
-			Object.defineProperty(self, 'width', {
-				get: function () { return _w; },
-				set: function (value) { _w = value; }
-			});
-			Object.defineProperty(self, 'height', {
-				get: function () { return _h; },
-				set: function (value) { _h = value; }
-			});
-			Object.defineProperty(self, 'lineWidth', {
-				get: function() { return _lineWidth; },
-				set: function(value) { _lineWidth = value; }
-			});
-			Object.defineProperty(self, 'strokeColor', {
-				get: function () { return _strokeColor; },
-				set: function (value) { _strokeColor = value; }
-			});
-			Object.defineProperty(self, 'fillColor', {
-				get: function () { return _fillColor; },
-				set: function (value) { _fillColor = value; }
-			});
-			Object.defineProperty(self, 'selected', {
-				get: function () { return _selected; },
-				set: function (value) { _selected = value; }
-			});
-			Object.defineProperty(self, 'hovered', {
-				get: function () { return _hovered; },
-				set: function (value) { _hovered = value; }
-			});
-			Object.defineProperty(self, 'labelText', {
-				get: function () { return _labelText; },
-				set: function (value) { _labelText = value; }
-			});
-			Object.defineProperty(self, 'labelTextColor', {
-				get: function () { return _labelTextColor; },
-				set: function (value) { _labelTextColor = value; }
-			});
-			Object.defineProperty(self, 'dragHandles', {
-				get: function () { return _drags; }
-			});
-			Object.defineProperty(self, 'drawHandles', {
-				get: function () { return _drawHandles; },
-				set: function (value) { 
-					_drawHandles = value;
-					if (value) {
-						_drags = setDrags();
-					}
-				}
-			});
-			Object.defineProperty(self, 'visible', {
-				get: function () { return _visible; },
-				set: function (value) { _visible = value; }
-			});
-			Object.defineProperty(self, 'shadow', {
-				get: function () { return _shadow; },
-				set: function (value) { _shadow = value; }
-			});
-			Object.defineProperty(self, 'dashed', {
-				get: function () { return _dashed; },
-				set: function (value) { _dashed = value; }
-			});
-			Object.defineProperty(self, 'createdDate', {
-				get: function() { return _createdDate; }
-			});
+            Object.defineProperty(self, 'x', {
+                get: function () {
+                    return _x;
+                },
+                set: function (value) {
+                    _x = value;
+                }
+            });
+            Object.defineProperty(self, 'y', {
+                get: function () {
+                    return _y;
+                },
+                set: function (value) {
+                    _y = value;
+                }
+            });
+            Object.defineProperty(self, 'width', {
+                get: function () {
+                    return _w;
+                },
+                set: function (value) {
+                    _w = value;
+                }
+            });
+            Object.defineProperty(self, 'height', {
+                get: function () {
+                    return _h;
+                },
+                set: function (value) {
+                    _h = value;
+                }
+            });
+            Object.defineProperty(self, 'lineWidth', {
+                get: function () {
+                    return _lineWidth;
+                },
+                set: function (value) {
+                    _lineWidth = value;
+                }
+            });
+            Object.defineProperty(self, 'strokeColor', {
+                get: function () {
+                    return _strokeColor;
+                },
+                set: function (value) {
+                    _strokeColor = value;
+                }
+            });
+            Object.defineProperty(self, 'fillColor', {
+                get: function () {
+                    return _fillColor;
+                },
+                set: function (value) {
+                    _fillColor = value;
+                }
+            });
+            Object.defineProperty(self, 'selected', {
+                get: function () {
+                    return _selected;
+                },
+                set: function (value) {
+                    _selected = value;
+                }
+            });
+            Object.defineProperty(self, 'hovered', {
+                get: function () {
+                    return _hovered;
+                },
+                set: function (value) {
+                    _hovered = value;
+                }
+            });
+            Object.defineProperty(self, 'labelText', {
+                get: function () {
+                    return _labelText;
+                },
+                set: function (value) {
+                    _labelText = value;
+                }
+            });
+            Object.defineProperty(self, 'labelTextColor', {
+                get: function () {
+                    return _labelTextColor;
+                },
+                set: function (value) {
+                    _labelTextColor = value;
+                }
+            });
+            Object.defineProperty(self, 'dragHandles', {
+                get: function () {
+                    return _drags;
+                }
+            });
+            Object.defineProperty(self, 'drawHandles', {
+                get: function () {
+                    return _drawHandles;
+                },
+                set: function (value) {
+                    _drawHandles = value;
+                    if (value) {
+                        _drags = setDrags();
+                    }
+                }
+            });
+            Object.defineProperty(self, 'visible', {
+                get: function () {
+                    return _visible;
+                },
+                set: function (value) {
+                    _visible = value;
+                }
+            });
+            Object.defineProperty(self, 'shadow', {
+                get: function () {
+                    return _shadow;
+                },
+                set: function (value) {
+                    _shadow = value;
+                }
+            });
+            Object.defineProperty(self, 'dashed', {
+                get: function () {
+                    return _dashed;
+                },
+                set: function (value) {
+                    _dashed = value;
+                }
+            });
+            Object.defineProperty(self, 'createdDate', {
+                get: function () {
+                    return _createdDate;
+                }
+            });
 
-			function setter(propname, value) {
-				self[propname] = value;
-				return self;
-			}
+            function setter(propname, value) {
+                self[propname] = value;
+                return self;
+            }
 
-			function setDrags() {
-				return {
-					'nw': new simpleRect(_x - 2, _y - 2, 5, 5),
-					'n': new simpleRect(_x + (_w / 2) - 2, _y - 2, 5, 5),
-					'ne': new simpleRect(_x + _w - 2, _y - 2, 5, 5),
-					'e': new simpleRect(_x + _w - 2, _y + (_h / 2) - 2, 5, 5),
-					'se': new simpleRect(_x + _w - 2, _y + _h - 2, 5, 5),
-					's': new simpleRect(_x + (_w / 2) - 2, _y + _h - 2, 5, 5),
-					'sw': new simpleRect(_x - 2, _y + _h - 2, 5, 5),
-					'w': new simpleRect(_x - 2, _y + (_h / 2) - 2, 5, 5)
-				};
-			}
+            function setDrags() {
+                return {
+                    'nw': new simpleRect(_x - 2, _y - 2, 5, 5),
+                    'n': new simpleRect(_x + (_w / 2) - 2, _y - 2, 5, 5),
+                    'ne': new simpleRect(_x + _w - 2, _y - 2, 5, 5),
+                    'e': new simpleRect(_x + _w - 2, _y + (_h / 2) - 2, 5, 5),
+                    'se': new simpleRect(_x + _w - 2, _y + _h - 2, 5, 5),
+                    's': new simpleRect(_x + (_w / 2) - 2, _y + _h - 2, 5, 5),
+                    'sw': new simpleRect(_x - 2, _y + _h - 2, 5, 5),
+                    'w': new simpleRect(_x - 2, _y + (_h / 2) - 2, 5, 5)
+                };
+            }
 
-			self.setStrokeColor = function (value) { return setter('strokeColor', value); };
-			self.setFillColor = function (value) { return setter('fillColor', value); };
-			self.setLineWidth = function (value) { return setter('lineWidth', value); };
-			self.setSelected = function (value) { return setter('selected', value); };
-			self.setHovered= function (value) { return setter('hovered', value); };
-			self.setLabelText = function (value) { return setter('labelText', value); };
-			self.setLabelTextColor = function (value) { return setter('labelTextColor', value); };
-			self.setDrawHandles = function (value) { 
-				if (value) {
-					_drags = setDrags();
-				}
-				return setter('drawHandles', value); 
-			};
-			self.setShadow = function (value) { return setter('shadow', value); };
+            self.setStrokeColor = function (value) {
+                return setter('strokeColor', value);
+            };
+            self.setFillColor = function (value) {
+                return setter('fillColor', value);
+            };
+            self.setLineWidth = function (value) {
+                return setter('lineWidth', value);
+            };
+            self.setSelected = function (value) {
+                return setter('selected', value);
+            };
+            self.setHovered = function (value) {
+                return setter('hovered', value);
+            };
+            self.setLabelText = function (value) {
+                return setter('labelText', value);
+            };
+            self.setLabelTextColor = function (value) {
+                return setter('labelTextColor', value);
+            };
+            self.setDrawHandles = function (value) {
+                if (value) {
+                    _drags = setDrags();
+                }
+                return setter('drawHandles', value);
+            };
+            self.setShadow = function (value) {
+                return setter('shadow', value);
+            };
 
-			self.draw = function(canvasId) {
-				if (_visible) {
-					var canvas = document.getElementById(canvasId);
-					var context = canvas.getContext('2d');
-					if (_hovered || _selected) {
-						context.beginPath();
-						context.font = '12px Arial';
-						var measured = context.measureText(_labelText);
-						// draw label rect
-						var labelHeight = 16;
-						var labelWidth = measured.width + 12;
-						context.rect(_x, _y - labelHeight, labelWidth, labelHeight);
-						context.fillStyle = _strokeColor;
-						context.fill();
-						context.beginPath();
-						// draw text
-						context.fillStyle = _labelTextColor;
-						context.fillText(_labelText, _x + 4, _y - 2);
-					}
-					context.beginPath();
-					// draw selection rect
-					context.rect(_x, _y, _w, _h);
-					context.lineWidth = _lineWidth;
-					if (_shadow) {
-						context.shadowBlur = 2;
-						context.shadowColor = 'black';
-						context.shadowOffsetX = 2;
-						context.shadowOffsetY = 2;
-					}
-					if (_strokeColor && !_dashed) {
-						context.strokeStyle = _strokeColor;
-						context.stroke();
-					}
-					if (_fillColor) {
-						context.fillStyle = _fillColor;
-						context.fill();
-					}
-					if (_dashed) {
-						context.setLineDash([6, 3]);
-						context.strokeStyle = 'lightgray';
-						context.stroke();
-					}
-					if (_selected && _drawHandles) {
-						for (var key in _drags) {
-							_drags[key].clear(canvasId).draw(canvasId);
-						}
-					}
-					context.setLineDash([]);
-					context.shadowBlur = 0;
-					context.shadowColor = null;
-					context.shadowOffsetX = 0;
-					context.shadowOffsetY = 0;
-					context.strokeStyle = null;
-				}
-				return self;
-			};
-			self.containsPaddedPoint = function (x, y, xPad, yPad) {
-				return (x >= _x - xPad && x <= (_x + _w + xPad)) && (y >= _y - yPad && y <= (_y + _h + yPad));
-			};
-			self.containsPoint = function (x, y) {
-				return self.containsPaddedPoint(x, y, 0, 0);
-			};
-			self.clone = function () {
-				var newRect = new rect(_x, _y, _w, _h);
-				newRect.strokeColor = _strokeColor;
-				newRect.fillColor = _fillColor;
-				newRect.lineWidth = _lineWidth;
-				newRect.labelText = _labelText;
-				newRect.labelTextColor = _labelTextColor;
-				// things we don't think we need to copy...
-				// _selected = false;
-				// _hovered = false;
-				// _drawHandles = false;
-				// _visible = true;
-				// _shadow = false;
-				// _dashed = false;
-				return newRect;
-			};
-			self.translocate = function (startX, endX, startY, endY, direction) {
-				var resizeWidth = _w; 
-				var resizeHeight = _h; 
-				var resizeX = _x;
-				var resizeY = _y;
+            self.draw = function (canvasId) {
+                if (_visible) {
+                    var canvas = document.getElementById(canvasId);
+                    var context = canvas.getContext('2d');
+                    if (_hovered || _selected) {
+                        context.beginPath();
+                        context.font = '12px Arial';
+                        var measured = context.measureText(_labelText);
+                        // draw label rect
+                        var labelHeight = 16;
+                        var labelWidth = measured.width + 12;
+                        context.rect(_x, _y - labelHeight, labelWidth, labelHeight);
+                        context.fillStyle = _strokeColor;
+                        context.fill();
+                        context.beginPath();
+                        // draw text
+                        context.fillStyle = _labelTextColor;
+                        context.fillText(_labelText, _x + 4, _y - 2);
+                    }
+                    context.beginPath();
+                    // draw selection rect
+                    context.rect(_x, _y, _w, _h);
+                    context.lineWidth = _lineWidth;
+                    if (_shadow) {
+                        context.shadowBlur = 2;
+                        context.shadowColor = 'black';
+                        context.shadowOffsetX = 2;
+                        context.shadowOffsetY = 2;
+                    }
+                    if (_strokeColor && !_dashed) {
+                        context.strokeStyle = _strokeColor;
+                        context.stroke();
+                    }
+                    if (_fillColor) {
+                        context.fillStyle = _fillColor;
+                        context.fill();
+                    }
+                    if (_dashed) {
+                        context.setLineDash([6, 3]);
+                        context.strokeStyle = 'lightgray';
+                        context.stroke();
+                    }
+                    if (_selected && _drawHandles) {
+                        for (var key in _drags) {
+                            _drags[key].clear(canvasId).draw(canvasId);
+                        }
+                    }
+                    context.setLineDash([]);
+                    context.shadowBlur = 0;
+                    context.shadowColor = null;
+                    context.shadowOffsetX = 0;
+                    context.shadowOffsetY = 0;
+                    context.strokeStyle = null;
+                }
+                return self;
+            };
+            self.containsPaddedPoint = function (x, y, xPad, yPad) {
+                return (x >= _x - xPad && x <= (_x + _w + xPad)) && (y >= _y - yPad && y <= (_y + _h + yPad));
+            };
+            self.containsPoint = function (x, y) {
+                return self.containsPaddedPoint(x, y, 0, 0);
+            };
+            self.clone = function () {
+                var newRect = new rect(_x, _y, _w, _h);
+                newRect.strokeColor = _strokeColor;
+                newRect.fillColor = _fillColor;
+                newRect.lineWidth = _lineWidth;
+                newRect.labelText = _labelText;
+                newRect.labelTextColor = _labelTextColor;
+                // things we don't think we need to copy...
+                // _selected = false;
+                // _hovered = false;
+                // _drawHandles = false;
+                // _visible = true;
+                // _shadow = false;
+                // _dashed = false;
+                return newRect;
+            };
+            self.translocate = function (startX, endX, startY, endY, direction) {
+                var resizeWidth = _w;
+                var resizeHeight = _h;
+                var resizeX = _x;
+                var resizeY = _y;
 
-				switch (direction) {
-					case 'nw-resize':
-						resizeY += endY - startY;
-						resizeX += endX - startX;
-						resizeWidth += startX - resizeX;
-						resizeHeight += startY - resizeY;
-						break;
-					case 'ne-resize':
-						resizeY += endY - startY;
-						resizeWidth += endX - startX;
-						resizeHeight += startY - resizeY;
-						break;
-					case 'sw-resize':
-						resizeX += endX - startX;
-						resizeWidth += startX - resizeX;
-						resizeHeight += endY - startY;
-						break;
-					case 'se-resize':
-						resizeWidth += endX - startX;
-						resizeHeight += endY - startY;
-						break;
-					case 'n-resize':
-						resizeY += endY - startY;
-						resizeHeight += startY - resizeY;
-						break;
-					case 's-resize':
-						resizeHeight += endY - startY;
-						break;
-					case 'w-resize':
-						resizeX += endX - startX;
-						resizeWidth += startX - resizeX;
-						break;
-					case 'e-resize':
-						resizeWidth += endX - startX;
-						break;
-					case 'move':
-						resizeX += endX - startX;
-						resizeY += endY - startY;
-						break;
-				}
-				// var _x = Math.min(x, x + w);
-				// var _y = Math.min(y, y + h);
-				
-				if (resizeWidth < minWidth)
-					resizeWidth = minWidth;
+                switch (direction) {
+                case 'nw-resize':
+                    resizeY += endY - startY;
+                    resizeX += endX - startX;
+                    resizeWidth += startX - resizeX;
+                    resizeHeight += startY - resizeY;
+                    break;
+                case 'ne-resize':
+                    resizeY += endY - startY;
+                    resizeWidth += endX - startX;
+                    resizeHeight += startY - resizeY;
+                    break;
+                case 'sw-resize':
+                    resizeX += endX - startX;
+                    resizeWidth += startX - resizeX;
+                    resizeHeight += endY - startY;
+                    break;
+                case 'se-resize':
+                    resizeWidth += endX - startX;
+                    resizeHeight += endY - startY;
+                    break;
+                case 'n-resize':
+                    resizeY += endY - startY;
+                    resizeHeight += startY - resizeY;
+                    break;
+                case 's-resize':
+                    resizeHeight += endY - startY;
+                    break;
+                case 'w-resize':
+                    resizeX += endX - startX;
+                    resizeWidth += startX - resizeX;
+                    break;
+                case 'e-resize':
+                    resizeWidth += endX - startX;
+                    break;
+                case 'move':
+                    resizeX += endX - startX;
+                    resizeY += endY - startY;
+                    break;
+                }
+                // var _x = Math.min(x, x + w);
+                // var _y = Math.min(y, y + h);
 
-				if (resizeHeight < minHeight)
-					resizeHeight = minHeight;
+                if (resizeWidth < minWidth)
+                    resizeWidth = minWidth;
 
-				_x = resizeX;
-				_y = resizeY;
-				_w = resizeWidth;
-				_h = resizeHeight;
+                if (resizeHeight < minHeight)
+                    resizeHeight = minHeight;
 
-				return self;
-			}
-		};   
-       	var ellipse = function(cx, cy, w, h) {
-			var self = this;
+                _x = resizeX;
+                _y = resizeY;
+                _w = resizeWidth;
+                _h = resizeHeight;
 
-			var _cx = Math.min(cx, cx + w);
-			var _cy = Math.min(cy, cy + h);
-			var _rx = Math.abs(w);
+                return self;
+            }
+        };
+        var ellipse = function (cx, cy, w, h) {
+            var self = this;
+
+            var _cx = Math.min(cx, cx + w);
+            var _cy = Math.min(cy, cy + h);
+            var _rx = Math.abs(w);
             var _ry = Math.abs(h);
 
-			var _lineWidth = 1;
-			var _strokeColor = 'black';
-			var _fillColor = null;
-			var _selected = false;
-			var _labelText = '';
-			var _visible = true;
+            var _lineWidth = 1;
+            var _strokeColor = 'black';
+            var _fillColor = null;
+            var _selected = false;
+            var _labelText = '';
+            var _visible = true;
 
-			Object.defineProperty(self, 'lineWidth', {
-				get: function() { return _lineWidth; },
-				set: function(value) { _lineWidth = value; }
-			});
+            Object.defineProperty(self, 'lineWidth', {
+                get: function () {
+                    return _lineWidth;
+                },
+                set: function (value) {
+                    _lineWidth = value;
+                }
+            });
 
-			Object.defineProperty(self, 'strokeColor', {
-				get: function () { return _strokeColor; },
-				set: function (value) { _strokeColor = value; }
-			});
+            Object.defineProperty(self, 'strokeColor', {
+                get: function () {
+                    return _strokeColor;
+                },
+                set: function (value) {
+                    _strokeColor = value;
+                }
+            });
 
-			Object.defineProperty(self, 'fillColor', {
-				get: function () { return _fillColor; },
-				set: function (value) { _fillColor = value; }
-			});
+            Object.defineProperty(self, 'fillColor', {
+                get: function () {
+                    return _fillColor;
+                },
+                set: function (value) {
+                    _fillColor = value;
+                }
+            });
 
-			Object.defineProperty(self, 'selected', {
-				get: function () { return _selected; },
-				set: function (value) { _selected = value; }
-			});
+            Object.defineProperty(self, 'selected', {
+                get: function () {
+                    return _selected;
+                },
+                set: function (value) {
+                    _selected = value;
+                }
+            });
 
-			Object.defineProperty(self, 'labelText', {
-				get: function () { return _labelText; },
-				set: function (value) { _labelText = value; }
-			});
+            Object.defineProperty(self, 'labelText', {
+                get: function () {
+                    return _labelText;
+                },
+                set: function (value) {
+                    _labelText = value;
+                }
+            });
 
-			function setter(propname, value) {
-				self[propname] = value;
-				return self;
-			}
+            function setter(propname, value) {
+                self[propname] = value;
+                return self;
+            }
 
-			self.setStrokeColor = function (value) { return setter('strokeColor', value); };
-			self.setFillColor = function (value) { return setter('fillColor', value); };
-			self.setLineWidth = function (value) { return setter('lineWidth', value); };
-			self.setSelected = function (value) { return setter('selected', value); };
-			self.setLabelText = function (value) { return setter('labelText', value); };
+            self.setStrokeColor = function (value) {
+                return setter('strokeColor', value);
+            };
+            self.setFillColor = function (value) {
+                return setter('fillColor', value);
+            };
+            self.setLineWidth = function (value) {
+                return setter('lineWidth', value);
+            };
+            self.setSelected = function (value) {
+                return setter('selected', value);
+            };
+            self.setLabelText = function (value) {
+                return setter('labelText', value);
+            };
 
-			self.draw = function(canvasId) {
-				var canvas = document.getElementById(canvasId);
-				var context = canvas.getContext('2d');
+            self.draw = function (canvasId) {
+                var canvas = document.getElementById(canvasId);
+                var context = canvas.getContext('2d');
                 var half_width = _rx / 2;
                 var two_thirds_width = _rx * 2 / 3;
                 var half_height = _ry / 2;
                 var sx = _cx + half_width;
                 var sy = _cy + half_height;
-				if (_visible)
-				{
+                if (_visible) {
                     context.beginPath();
                     if (isEllipseSupported(sx, sy, half_width, half_height, 0)) {
                         context.ellipse(sx, sy, half_width, half_height, 0, 0, 2 * Math.PI, false);
-                    }
-                    else {
+                    } else {
                         context.moveTo(sx, sy - half_height);
                         context.bezierCurveTo(sx + two_thirds_width, sy - half_height, sx + two_thirds_width, sy + half_height, sx, sy + half_height);
                         context.bezierCurveTo(sx - two_thirds_width, sy + half_height, sx - two_thirds_width, sy - half_height, sx, sy - half_height);
@@ -523,418 +673,429 @@
                         context.fillStyle = _fillColor;
                         context.fill();
                     }
-				}
+                }
 
-				return self;
-			};
+                return self;
+            };
 
-			self.containsPaddedPoint = function (x, y, xPad, yPad) {
-				return (x >= _x - xPad && x <= (_x + _w + xPad)) && (y >= _y - yPad && y <= (_y + _h + yPad));
-			};
-			self.containsPoint = function (x, y) {
-				return self.containsPaddedPoint(x, y, 0, 0);
-			};
-		};
+            self.containsPaddedPoint = function (x, y, xPad, yPad) {
+                return (x >= _x - xPad && x <= (_x + _w + xPad)) && (y >= _y - yPad && y <= (_y + _h + yPad));
+            };
+            self.containsPoint = function (x, y) {
+                return self.containsPaddedPoint(x, y, 0, 0);
+            };
+        };
 
-		function drawObjects() {
-			clearCanvas('mainCanvas');
-			for (var i = 0; i < drawingObjects.length; i++) {
-				drawingObjects[i].draw('mainCanvas');
-			}
-		}
-		function clearCanvas(canvasId) {
-			var canvas = document.getElementById(canvasId);
-			var context = canvas.getContext('2d');
-			context.beginPath();
-			context.clearRect(0, 0, 640, 480);
-		}
-		function unSelectObjectsProperty(propname) {
-			for (var i=0; i< drawingObjects.length; i++) {
-				drawingObjects[i][propname] = false;
-				if (!drawingObjects[i].selected) {
-					drawingObjects[i].drawHandles = false;
-				}
-			}
-		}
-		function selectAnnotation(e) {
-			if (!drawMode) {
-				var annotation = getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 0, 0);
-				if (annotation) {
-					var index = drawingObjects.indexOf(annotation);
-					selectAnnotationFromCard(index);
-				}
-			}
-		}
-		function selectAnnotationFromCard(i) {
-			if (drawMode)
-				changeToMode('select');
+        function drawObjects() {
+            clearCanvas('mainCanvas');
+            for (var i = 0; i < drawingObjects.length; i++) {
+                drawingObjects[i].draw('mainCanvas');
+            }
+        }
 
-			var annotation = drawingObjects[i];
-			if (annotation != currentSelectedRect) {
-				// unselect the previous
-				var prevIndex = drawingObjects.indexOf(currentSelectedRect);
-				if (prevIndex >= 0) {
-					var prevCard = document.getElementById('cardContainer_' + prevIndex);
-					prevCard.className = 'card-class-unselected';
-					var prevTxt = document.getElementById('cardTxt_' + prevIndex);
-					prevTxt.className = 'cardTxt-off';
-					var prevLbl = document.getElementById('cardLabel_' + prevIndex);
-					prevLbl.className = 'cardLabel-on';
-				}
-			}
+        function clearCanvas(canvasId) {
+            var canvas = document.getElementById(canvasId);
+            var context = canvas.getContext('2d');
+            context.beginPath();
+            context.clearRect(0, 0, 640, 480);
+        }
 
-			if (annotation && annotation != currentSelectedRect) {
-				var card = document.getElementById('cardContainer_' + i);
-				// card.select();
-				card.focus();
-				card.className = 'card-class-selected';
-				var prevTxt = document.getElementById('cardTxt_' + i);
-				prevTxt.className = 'cardTxt-on';
-				prevTxt.select();
-				prevTxt.focus();
-				var prevLbl = document.getElementById('cardLabel_' + i);
-				prevLbl.className = 'cardLabel-off';
-				unSelectObjectsProperty('selected');
-				annotation.selected = true;
-				annotation.drawHandles = true;
-				currentSelectedRect = annotation;
-				drawObjects();
-			}
-		}
-		function getAnnotation(x, y, padX, padY) {
-			var annotation = null;
-			for (var i=drawingObjects.length -1; i>= 0; i--) {
-				if (drawingObjects[i].containsPaddedPoint(x, y, padX, padY)) {
-					annotation = drawingObjects[i];
-					break;
-				}
-			}
-			return annotation;
-		}
-		function startDrawShape(e) {
-			if (drawMode) {
-				var r = Math.floor(Math.random() * 256);
-				var g = Math.floor(Math.random() * 256);
-				var b = Math.floor(Math.random() * 256);
-				color = 'rgb(' + r + ', ' + g + ', ' + b + ')';
-				currentStartX = getCanvasX(e.clientX);
-				currentStartY = getCanvasY(e.clientY);
-				drawing = true;
-			} // Translocating annotation
-			else if(currentSelectedShape && cursor != 'default') {
-				currentStartX = getCanvasX(e.clientX);
-				currentStartY = getCanvasY(e.clientY);
-				currentSelectedShape.drawHandles = false;
-				currentSelectedShape.dashed = true;					
-				translocating = true;
-			}
-		}
+        function unSelectObjectsProperty(propname) {
+            for (var i = 0; i < drawingObjects.length; i++) {
+                drawingObjects[i][propname] = false;
+                if (!drawingObjects[i].selected) {
+                    drawingObjects[i].drawHandles = false;
+                }
+            }
+        }
+
+        function selectAnnotation(e) {
+            if (!drawMode) {
+                var annotation = getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 0, 0);
+                if (annotation) {
+                    var index = drawingObjects.indexOf(annotation);
+                    selectAnnotationFromCard(index);
+                }
+            }
+        }
+
+        function selectAnnotationFromCard(i) {
+            if (drawMode)
+                changeToMode('select');
+
+            var annotation = drawingObjects[i];
+            if (annotation != currentSelectedRect) {
+                // unselect the previous
+                var prevIndex = drawingObjects.indexOf(currentSelectedRect);
+                if (prevIndex >= 0) {
+                    var prevCard = document.getElementById('cardContainer_' + prevIndex);
+                    prevCard.className = 'card-class-unselected';
+                    var prevTxt = document.getElementById('cardTxt_' + prevIndex);
+                    prevTxt.className = 'cardTxt-off';
+                    var prevLbl = document.getElementById('cardLabel_' + prevIndex);
+                    prevLbl.className = 'cardLabel-on';
+                }
+            }
+
+            if (annotation && annotation != currentSelectedRect) {
+                var card = document.getElementById('cardContainer_' + i);
+                // card.select();
+                card.focus();
+                card.className = 'card-class-selected';
+                var prevTxt = document.getElementById('cardTxt_' + i);
+                prevTxt.className = 'cardTxt-on';
+                prevTxt.select();
+                prevTxt.focus();
+                var prevLbl = document.getElementById('cardLabel_' + i);
+                prevLbl.className = 'cardLabel-off';
+                unSelectObjectsProperty('selected');
+                annotation.selected = true;
+                annotation.drawHandles = true;
+                currentSelectedRect = annotation;
+                drawObjects();
+            }
+        }
+
+        function getAnnotation(x, y, padX, padY) {
+            var annotation = null;
+            for (var i = drawingObjects.length - 1; i >= 0; i--) {
+                if (drawingObjects[i].containsPaddedPoint(x, y, padX, padY)) {
+                    annotation = drawingObjects[i];
+                    break;
+                }
+            }
+            return annotation;
+        }
+
+        function startDrawShape(e) {
+            if (drawMode) {
+                var r = Math.floor(Math.random() * 256);
+                var g = Math.floor(Math.random() * 256);
+                var b = Math.floor(Math.random() * 256);
+                color = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+                currentStartX = getCanvasX(e.clientX);
+                currentStartY = getCanvasY(e.clientY);
+                drawing = true;
+            } // Translocating annotation
+            else if (currentSelectedShape && cursor != 'default') {
+                currentStartX = getCanvasX(e.clientX);
+                currentStartY = getCanvasY(e.clientY);
+                currentSelectedShape.drawHandles = false;
+                currentSelectedShape.dashed = true;
+                translocating = true;
+            }
+        }
+
         function showTempShape(e) {
             if (selectedShape == 'Rectangle')
                 showTempRect(e);
             else
                 showTempEllipse(e);
         }
+
         function showTempEllipse(e) {
-			if (drawing) {
-				var width = getCanvasX(e.clientX) - currentStartX - 1;
-				var height = getCanvasY(e.clientY) - currentStartY - 1;
-				drawObjects();
-				new rect(currentStartX, currentStartY, width, height)
-						.setStrokeColor(color)
-						.draw('mainCanvas');
+            if (drawing) {
+                var width = getCanvasX(e.clientX) - currentStartX - 1;
+                var height = getCanvasY(e.clientY) - currentStartY - 1;
+                drawObjects();
+                new rect(currentStartX, currentStartY, width, height)
+                    .setStrokeColor(color)
+                    .draw('mainCanvas');
                 new ellipse(currentStartX, currentStartY, width, height)
-                        .setStrokeColor(color)
-                        .draw('mainCanvas');
-			}
-			else if (translocating && currentSelectedShape) {
-				drawObjects();
-				currentSelectedShape.clone()
-					.translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
-					.setStrokeColor('blue')
-					.setSelected(true)
-					.setDrawHandles(false)
-					.setLabelTextColor('white')
-					.setShadow(true)
-					.draw('mainCanvas');
-			}
-			else if(!drawMode) {
-				if (currentSelectedShape && currentSelectedShape == getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 2, 2)) {
-					for (var key in currentSelectedShape.dragHandles) {
-						if (e && e.target && e.target.style) {
-							if (currentSelectedShape.dragHandles[key].containsPoint(getCanvasX(e.clientX), getCanvasY(e.clientY))) {
-								cursor = key + '-resize';
-								break;
-							}
-						}
-						cursor = 'move';
-					}
-				}
-				else {
-					unSelectObjectsProperty('hovered');
-					var annotation = getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 0, 0);
-					if (annotation && !annotation.selected) {
-						annotation.hovered = true;
-					}
-					cursor = 'default';
-					drawObjects();
-				}
-				e.target.style.cursor = cursor;
-			}
+                    .setStrokeColor(color)
+                    .draw('mainCanvas');
+            } else if (translocating && currentSelectedShape) {
+                drawObjects();
+                currentSelectedShape.clone()
+                    .translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+                    .setStrokeColor('blue')
+                    .setSelected(true)
+                    .setDrawHandles(false)
+                    .setLabelTextColor('white')
+                    .setShadow(true)
+                    .draw('mainCanvas');
+            } else if (!drawMode) {
+                if (currentSelectedShape && currentSelectedShape == getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 2, 2)) {
+                    for (var key in currentSelectedShape.dragHandles) {
+                        if (e && e.target && e.target.style) {
+                            if (currentSelectedShape.dragHandles[key].containsPoint(getCanvasX(e.clientX), getCanvasY(e.clientY))) {
+                                cursor = key + '-resize';
+                                break;
+                            }
+                        }
+                        cursor = 'move';
+                    }
+                } else {
+                    unSelectObjectsProperty('hovered');
+                    var annotation = getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 0, 0);
+                    if (annotation && !annotation.selected) {
+                        annotation.hovered = true;
+                    }
+                    cursor = 'default';
+                    drawObjects();
+                }
+                e.target.style.cursor = cursor;
+            }
         }
-		function showTempRect(e) {
-			if (drawing) {
-				var width = getCanvasX(e.clientX) - currentStartX - 1;
-				var height = getCanvasY(e.clientY) - currentStartY - 1;
-				drawObjects();
-				new rect(currentStartX, currentStartY, width, height)
-						.setStrokeColor(color)
-						.draw('mainCanvas');
-			}
-			else if (translocating && currentSelectedRect) {
-				drawObjects();
-				currentSelectedShape.clone()
-					.translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
-					.setStrokeColor('blue')
-					.setSelected(true)
-					.setDrawHandles(false)
-					.setLabelTextColor('white')
-					.setShadow(true)
-					.draw('mainCanvas');
-			}
-			else if(!drawMode) {
-				if (currentSelectedShape && currentSelectedShape == getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 2, 2)) {
-					for (var key in currentSelectedShape.dragHandles) {
-						if (e && e.target && e.target.style) {
-							if (currentSelectedShape.dragHandles[key].containsPoint(getCanvasX(e.clientX), getCanvasY(e.clientY))) {
-								cursor = key + '-resize';
-								break;
-							}
-						}
-						cursor = 'move';
-					}
-				} else {
-					unSelectObjectsProperty('hovered');
-					var annotation = getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 0, 0);
-					if (annotation && !annotation.selected) {
-						annotation.hovered = true;
-					}
-					cursor = 'default';
-					drawObjects();
-				}
-				e.target.style.cursor = cursor;
-			}
-		}
+
+        function showTempRect(e) {
+            if (drawing) {
+                var width = getCanvasX(e.clientX) - currentStartX - 1;
+                var height = getCanvasY(e.clientY) - currentStartY - 1;
+                drawObjects();
+                new rect(currentStartX, currentStartY, width, height)
+                    .setStrokeColor(color)
+                    .draw('mainCanvas');
+            } else if (translocating && currentSelectedRect) {
+                drawObjects();
+                currentSelectedShape.clone()
+                    .translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+                    .setStrokeColor('blue')
+                    .setSelected(true)
+                    .setDrawHandles(false)
+                    .setLabelTextColor('white')
+                    .setShadow(true)
+                    .draw('mainCanvas');
+            } else if (!drawMode) {
+                if (currentSelectedShape && currentSelectedShape == getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 2, 2)) {
+                    for (var key in currentSelectedShape.dragHandles) {
+                        if (e && e.target && e.target.style) {
+                            if (currentSelectedShape.dragHandles[key].containsPoint(getCanvasX(e.clientX), getCanvasY(e.clientY))) {
+                                cursor = key + '-resize';
+                                break;
+                            }
+                        }
+                        cursor = 'move';
+                    }
+                } else {
+                    unSelectObjectsProperty('hovered');
+                    var annotation = getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 0, 0);
+                    if (annotation && !annotation.selected) {
+                        annotation.hovered = true;
+                    }
+                    cursor = 'default';
+                    drawObjects();
+                }
+                e.target.style.cursor = cursor;
+            }
+        }
+
         function stopDrawShape(e) {
             if (selectedShape == 'Rectangle')
                 stopDrawRect(e);
             else
-                stopDrawEllipse(e);            
+                stopDrawEllipse(e);
         }
-		function stopDrawRect(e) {
-			if (drawing) {
-				showTempShape(e);
-				drawing = false;
-				var width = getCanvasX(e.clientX) - currentStartX - 1;
-				var height = getCanvasY(e.clientY) - currentStartY - 1;
-				if (Math.abs(width) < minWidth || Math.abs(height) < minHeight) {
-					alert('You made stuff too small, try again.');
-					return;
-				}
-				unSelectObjectsProperty('selected');
-				var newRect = new rect(currentStartX, currentStartY, width, height).setStrokeColor(color).setLabelText('Test').setSelected(true);
-				currentSelectedShape = newRect;
-				drawingObjects.push(newRect);
-				drawObjects();
-			}
-			else if (translocating && currentSelectedShape) {
-				translocating = false;
-				var currentSelectedIndex = drawingObjects.indexOf(currentSelectedRect);
-				var newRect = currentSelectedRect.clone()
-						.translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
-						.setSelected(true)
-						.setDrawHandles(true);
-				drawingObjects[currentSelectedIndex] = newRect;
-				drawObjects();
-			}
-		}
-	function stopDrawEllipse(e) {
-			if (drawing) {
-				showTempShape(e);
-				drawing = false;
-				var width = getCanvasX(e.clientX) - currentStartX - 1;
-				var height = getCanvasY(e.clientY) - currentStartY - 1;
-				if (Math.abs(width) < minWidth || Math.abs(height) < minHeight) {
-					alert('You made stuff too small, try again.');
-					return;
-				}
-				unSelectObjectsProperty('selected');
+
+        function stopDrawRect(e) {
+            if (drawing) {
+                showTempShape(e);
+                drawing = false;
+                var width = getCanvasX(e.clientX) - currentStartX - 1;
+                var height = getCanvasY(e.clientY) - currentStartY - 1;
+                if (Math.abs(width) < minWidth || Math.abs(height) < minHeight) {
+                    alert('You made stuff too small, try again.');
+                    return;
+                }
+                unSelectObjectsProperty('selected');
+                var newRect = new rect(currentStartX, currentStartY, width, height).setStrokeColor(color).setLabelText('Test').setSelected(true);
+                currentSelectedShape = newRect;
+                drawingObjects.push(newRect);
+                drawObjects();
+            } else if (translocating && currentSelectedShape) {
+                translocating = false;
+                var currentSelectedIndex = drawingObjects.indexOf(currentSelectedRect);
+                var newRect = currentSelectedRect.clone()
+                    .translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+                    .setSelected(true)
+                    .setDrawHandles(true);
+                drawingObjects[currentSelectedIndex] = newRect;
+                drawObjects();
+            }
+        }
+
+        function stopDrawEllipse(e) {
+            if (drawing) {
+                showTempShape(e);
+                drawing = false;
+                var width = getCanvasX(e.clientX) - currentStartX - 1;
+                var height = getCanvasY(e.clientY) - currentStartY - 1;
+                if (Math.abs(width) < minWidth || Math.abs(height) < minHeight) {
+                    alert('You made stuff too small, try again.');
+                    return;
+                }
+                unSelectObjectsProperty('selected');
                 var newEllipse = new ellipse(currentStartX, currentStartY, width, height)
-                        .setStrokeColor(color)
-                        .draw('mainCanvas');				
+                    .setStrokeColor(color)
+                    .draw('mainCanvas');
                 currentSelectedShape = newEllipse;
-				drawingObjects.push(newEllipse);
-				drawObjects();
-			}
-			else if (translocating && currentSelectedShape) {
-				translocating = false;
-				var currentSelectedIndex = drawingObjects.indexOf(currentSelectedShape);
-				var newRect = currentSelectedShape.clone()
-						.translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
-						.setSelected(true)
-						.setDrawHandles(true);
-				drawingObjects[currentSelectedIndex] = newRect;
-				drawObjects();
-			}
-		}
-		function focusGained(event) {
-			if (drawMode && event && event.target && event.target.style) {
-				cursor = 'crosshair';
-				event.target.style.cursor = cursor;
-			}
-		}
-		function focusLost(event) {
-			drawing = false;
-			drawObjects();
-			if (event && event.target && event.target.style) {
-				cursor = 'default';
-				event.target.style.cursor = cursor;
-			}
-		}
-		function updateLabel(p, i, txt) {
-			if (currentSelectedRect) {
-				if (drawingObjects[i] == currentSelectedRect) {
-					currentSelectedRect.labelText = txt.value;
-					document.getElementById('cardLabel_' + i).textContent = txt.value;
-					drawObjects();
-				}
-			}
-		}
-		       function shapeChange(c) {
+                drawingObjects.push(newEllipse);
+                drawObjects();
+            } else if (translocating && currentSelectedShape) {
+                translocating = false;
+                var currentSelectedIndex = drawingObjects.indexOf(currentSelectedShape);
+                var newRect = currentSelectedShape.clone()
+                    .translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+                    .setSelected(true)
+                    .setDrawHandles(true);
+                drawingObjects[currentSelectedIndex] = newRect;
+                drawObjects();
+            }
+        }
+
+        function focusGained(event) {
+            if (drawMode && event && event.target && event.target.style) {
+                cursor = 'crosshair';
+                event.target.style.cursor = cursor;
+            }
+        }
+
+        function focusLost(event) {
+            drawing = false;
+            drawObjects();
+            if (event && event.target && event.target.style) {
+                cursor = 'default';
+                event.target.style.cursor = cursor;
+            }
+        }
+
+        function updateLabel(p, i, txt) {
+            if (currentSelectedRect) {
+                if (drawingObjects[i] == currentSelectedRect) {
+                    currentSelectedRect.labelText = txt.value;
+                    document.getElementById('cardLabel_' + i).textContent = txt.value;
+                    drawObjects();
+                }
+            }
+        }
+
+        function shapeChange(c) {
             if (c.value == 'Rectangle')
                 selectedShape = 'Rectangle';
             else
                 selectedShape = 'Ellipse';
         }
-		function drawModeChange(c) {
-			drawMode = c;
-			if (currentSelectedShape) {
-				currentSelectedShape.drawHandles = !c;
-				drawObjects();
-			}
-		}
-		function getCanvasX(x) {
-			// TODO: Refactor these based on need
-			return x + offsetX;
-		}
-		function getCanvasY(y) {
-			// TODO: Refactor these based on need
-			return y + offsetY;
-		}
+
+        function drawModeChange(c) {
+            drawMode = c;
+            if (currentSelectedShape) {
+                currentSelectedShape.drawHandles = !c;
+                drawObjects();
+            }
+        }
+
+        function getCanvasX(x) {
+            // TODO: Refactor these based on need
+            return x + offsetX;
+        }
+
+        function getCanvasY(y) {
+            // TODO: Refactor these based on need
+            return y + offsetY;
+        }
+
         function isEllipseSupported(x, y, rx, ry, rot) {
             try {
                 document.getElementById('mainCanvas')
                     .getContext('2d')
                     .ellipse(x, y, rx, ry, rot, 0, 2 * Math.PI);
-            }
-            catch (err) {
+            } catch (err) {
                 return false;
             }
             return true;
         }
 
-		function loadCards() {
-			var cardSpace = document.getElementById('cardSpace');
-			while(cardSpace.firstChild) {
-				cardSpace.removeChild(cardSpace.firstChild);
-			}
-			for (var i = 0; i < drawingObjects.length; i++) {
-				var card = document.createElement('div');
-				card.setAttribute('name', 'cardContainer_' + i);
-				card.setAttribute('id', 'cardContainer_' + i);
-				card.className = 'card-class-unselected';
-				card.setAttribute('onclick', 'selectAnnotationFromCard("' + i + '");')
-				var cardTxt = document.createElement('input');
-				var cardLabel = document.createElement('span');
-				cardTxt.setAttribute('onkeyup', 'updateLabel(event, "' + i + '", this);');
-				cardTxt.setAttribute('onfocus', 'selectAnnotationFromCard("' + i + '");');
-				cardTxt.setAttribute('name', 'cardTxt_' + i);
-				cardTxt.setAttribute('id', 'cardTxt_' + i);
-				cardTxt.className = 'cardTxt-off';
-				cardTxt.value = drawingObjects[i].labelText;
-				cardLabel.setAttribute('name', 'cardLabel_' + i);
-				cardLabel.setAttribute('id', 'cardLabel_' + i);
-				cardLabel.textContent = drawingObjects[i].labelText;
-				cardLabel.className = 'cardLabel-on';
-				var icon = document.createElement('img');
-				icon.className = 'card-icon';
-				icon.setAttribute('src', 'markup_icon.png');
-				var annotationInfo = document.createElement('span');
-				annotationInfo.textContent = 'Created By: Todd Kaji on ' + drawingObjects[i].createdDate.toLocaleString();
-				annotationInfo.className = 'markup-sub-info';
-				card.appendChild(icon);
-				card.appendChild(cardLabel);
-				card.appendChild(cardTxt);
-				card.appendChild(annotationInfo);
-				cardSpace.appendChild(card);
-			}
-		}
+        function loadCards() {
+            var cardSpace = document.getElementById('cardSpace');
+            while (cardSpace.firstChild) {
+                cardSpace.removeChild(cardSpace.firstChild);
+            }
+            for (var i = 0; i < drawingObjects.length; i++) {
+                var card = document.createElement('div');
+                card.setAttribute('name', 'cardContainer_' + i);
+                card.setAttribute('id', 'cardContainer_' + i);
+                card.className = 'card-class-unselected';
+                card.setAttribute('onclick', 'selectAnnotationFromCard("' + i + '");')
+                var cardTxt = document.createElement('input');
+                var cardLabel = document.createElement('span');
+                cardTxt.setAttribute('onkeyup', 'updateLabel(event, "' + i + '", this);');
+                cardTxt.setAttribute('onfocus', 'selectAnnotationFromCard("' + i + '");');
+                cardTxt.setAttribute('name', 'cardTxt_' + i);
+                cardTxt.setAttribute('id', 'cardTxt_' + i);
+                cardTxt.className = 'cardTxt-off';
+                cardTxt.value = drawingObjects[i].labelText;
+                cardLabel.setAttribute('name', 'cardLabel_' + i);
+                cardLabel.setAttribute('id', 'cardLabel_' + i);
+                cardLabel.textContent = drawingObjects[i].labelText;
+                cardLabel.className = 'cardLabel-on';
+                var icon = document.createElement('img');
+                icon.className = 'card-icon';
+                icon.setAttribute('src', 'markup_icon.png');
+                var annotationInfo = document.createElement('span');
+                annotationInfo.textContent = 'Created By: Todd Kaji on ' + drawingObjects[i].createdDate.toLocaleString();
+                annotationInfo.className = 'markup-sub-info';
+                card.appendChild(icon);
+                card.appendChild(cardLabel);
+                card.appendChild(cardTxt);
+                card.appendChild(annotationInfo);
+                cardSpace.appendChild(card);
+            }
+        }
 
-		function changeToMode(mode) {
-			if (mode == 'select') {
-				drawMode = false;
-				document.getElementById('selectMode').checked = true;
-				document.getElementById('drawMode').checked = false;
-				if (currentSelectedRect) {
-					currentSelectedRect.drawHandles = true;
-					drawObjects();
-				}
-			}
-			else if (mode == 'draw') {
-				drawMode = true;
-				document.getElementById('selectMode').checked = false;
-				document.getElementById('drawMode').checked = true;
-				if (currentSelectedRect) {
-					currentSelectedRect.drawHandles = false;
-					drawObjects();
-				}
-			
-				cursor = 'crosshair';
-				document.getElementById('mainCanvas').style.cursor = cursor;				
-			}
-		}
-		function checkKeyCombinations(e) {
-			switch (e.key) {
-				case 'Del':
-				case 'Delete': // delete
-					var currentSelectedIndex = drawingObjects.indexOf(currentSelectedRect);
-					if (currentSelectedIndex >= 0) {
-						drawingObjects.splice(currentSelectedIndex, 1);
-						drawObjects();
-					}
-					break;
-				case 'd':
-				case 'D':
-					if (e.ctrlKey) {
-						if (drawMode) {
-							changeToMode('select');
-						}
-						else {
-							changeToMode('draw');
-						}
-					}
-					break;
-				default:
-					console.log(e.keyCode);
-			}
-		}
-		document.addEventListener('keydown', checkKeyCombinations);
-	</script>
+        function changeToMode(mode) {
+            if (mode == 'select') {
+                drawMode = false;
+                document.getElementById('selectMode').checked = true;
+                document.getElementById('drawMode').checked = false;
+                if (currentSelectedRect) {
+                    currentSelectedRect.drawHandles = true;
+                    drawObjects();
+                }
+            } else if (mode == 'draw') {
+                drawMode = true;
+                document.getElementById('selectMode').checked = false;
+                document.getElementById('drawMode').checked = true;
+                if (currentSelectedRect) {
+                    currentSelectedRect.drawHandles = false;
+                    drawObjects();
+                }
+
+                cursor = 'crosshair';
+                document.getElementById('mainCanvas').style.cursor = cursor;
+            }
+        }
+
+        function checkKeyCombinations(e) {
+            switch (e.key) {
+            case 'Del':
+            case 'Delete': // delete
+                var currentSelectedIndex = drawingObjects.indexOf(currentSelectedRect);
+                if (currentSelectedIndex >= 0) {
+                    drawingObjects.splice(currentSelectedIndex, 1);
+                    drawObjects();
+                }
+                break;
+            case 'd':
+            case 'D':
+                if (e.ctrlKey) {
+                    if (drawMode) {
+                        changeToMode('select');
+                    } else {
+                        changeToMode('draw');
+                    }
+                }
+                break;
+            default:
+                console.log(e.keyCode);
+            }
+        }
+        document.addEventListener('keydown', checkKeyCombinations);
+    </script>
 </head>
+
 <body>
-<div id="contentDiv"
-     style="position: absolute; top: 25px; left: 25px; width: 640px; height: 480px; padding: 5px 5px 5px 5px;">
-	<pre>
+    <div id="contentDiv" style="position: absolute; top: 25px; left: 25px; width: 640px; height: 480px; padding: 5px 5px 5px 5px;">
+        <pre>
 Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium
 doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore
 veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim
@@ -949,25 +1110,19 @@ ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea
 voluptate velit esse quam nihil molestiae consequatur, vel illum qui
 dolorem eum fugiat quo voluptas nulla pariatur?
 	</pre>
-</div>
+    </div>
 
-<canvas id="mainCanvas" width="640" height="480"
-        style="border: 1px solid black; z-index: 1"
-        onclick="selectAnnotation(event);"
-        onmousemove="showTempShape(event);"
-        onmousedown="startDrawShape(event);"
-        onmouseup="stopDrawShape(event);"
-        onmouseover="focusGained(event)"
-        onmouseout="focusLost(event)"></canvas>
-<div style="position: absolute; left: 690px; top: 25px; border: solid 1px black; height: 480px; width: 200px; font-family: Arial; font-size: 10px; overflow: auto;">
-	<div style="position: relative; height: 40px; width: 200px;">
-		Draw Mode: <input type="radio" name="drawMode" checked="checked" id="drawMode" onclick="drawModeChange(true);" />
-		Select Mode: <input type="radio" name="drawMode" id="selectMode" onclick="drawModeChange(false);"/><br />
-   Rectangle: <input type="radio" name="shape" value="Rectangle" checked="checked" onclick="shapeChange(this)"/>
-    Ellipse: <input type="radio" name="shape" value="Ellipse" onclick="shapeChange(this)"/> <br />
-	</div>
-	<div id="cardSpace" name="cardSpace" style="position: relative; height: 430px; width: 186px; padding: 2px 2px 2px 2px; overlfow: auto; margin: 2px 2px 2px 2px;">
-	</div>
-</div>
+    <canvas id="mainCanvas" width="640" height="480" style="border: 1px solid black; z-index: 1" onclick="selectAnnotation(event);" onmousemove="showTempShape(event);" onmousedown="startDrawShape(event);" onmouseup="stopDrawShape(event);" onmouseover="focusGained(event)" onmouseout="focusLost(event)"></canvas>
+    <div style="position: absolute; left: 690px; top: 25px; border: solid 1px black; height: 480px; width: 200px; font-family: Arial; font-size: 10px; overflow: auto;">
+        <div style="position: relative; height: 40px; width: 200px;">
+            Draw Mode: <input type="radio" name="drawMode" checked="checked" id="drawMode" onclick="drawModeChange(true);" /> 
+            Select Mode: <input type="radio" name="drawMode" id="selectMode" onclick="drawModeChange(false);" /><br /> 
+            Rectangle: <input type="radio" name="shape" value="Rectangle" checked="checked" onclick="shapeChange(this)" /> 
+            Ellipse: <input type="radio" name="shape" value="Ellipse" onclick="shapeChange(this)" /> <br />
+        </div>
+        <div id="cardSpace" name="cardSpace" style="position: relative; height: 430px; width: 186px; padding: 2px 2px 2px 2px; overlfow: auto; margin: 2px 2px 2px 2px;">
+        </div>
+    </div>
 </body>
+
 </html>
