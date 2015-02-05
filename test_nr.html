@@ -374,8 +374,8 @@
        	var ellipse = function(cx, cy, w, h) {
 			var self = this;
 
-			var _cx = cx
-			var _cy = cy
+			var _cx = Math.min(cx, cx + w);
+			var _cy = Math.min(cy, cy + h);
 			var _rx = Math.abs(w);
             var _ry = Math.abs(h);
 
