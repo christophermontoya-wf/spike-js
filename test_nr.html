@@ -85,7 +85,7 @@
 	</style>
 	<script>
 		var drawingObjects = [];
-		var currentSelectedRect = null;
+		var currentSelectedShape = null;
 		var currentStartX = -1;
 		var currentStartY = -1;
 		var drawing = false;
@@ -97,7 +97,7 @@
 		var drawMode = true;
 		var cursor = 'default';
 		var translocating = false;
-
+      		var selectedShape = 'Rectangle';
 		var simpleRect = function(x, y, width, height) {
 			var self = this;
 
@@ -443,20 +443,21 @@
 
 				return self;
 			}
-		};
-		var ellipse = function(cx, cy, rx, ry) {
+		};   
+       	var ellipse = function(cx, cy, w, h) {
 			var self = this;
 
-			var _cx = Math.min(cx, cx + rx);
-			var _cy = Math.min(cy, cy + ry);
-			var _rx = Math.abs(rx);
-			var _ry = Math.abs(ry);
+			var _cx = Math.min(cx, cx + w);
+			var _cy = Math.min(cy, cy + h);
+			var _rx = Math.abs(w);
+            var _ry = Math.abs(h);
 
 			var _lineWidth = 1;
 			var _strokeColor = 'black';
 			var _fillColor = null;
 			var _selected = false;
 			var _labelText = '';
+			var _visible = true;
 
 			Object.defineProperty(self, 'lineWidth', {
 				get: function() { return _lineWidth; },
@@ -497,23 +498,31 @@
 			self.draw = function(canvasId) {
 				var canvas = document.getElementById(canvasId);
 				var context = canvas.getContext('2d');
-				if (_selected)
+                var half_width = _rx / 2;
+                var two_thirds_width = _rx * 2 / 3;
+                var half_height = _ry / 2;
+                var sx = _cx + half_width;
+                var sy = _cy + half_height;
+				if (_visible)
 				{
-					context.beginPath();
-
-					context.translate(_cx-_rx, _cy-_ry);
-					context.scale(_rx, _ry);
-					context.arc(1, 1, 1, 0, 2 * Math.PI, false);
-
-					context.restore(); // restore to original state
-					if (_strokeColor) {
-						context.strokeStyle = _strokeColor;
-						context.stroke();
-					}
-					if (_fillColor) {
-						context.fillStyle = _fillColor;
-						context.fill();
-					}
+                    context.beginPath();
+                    if (isEllipseSupported(sx, sy, half_width, half_height, 0)) {
+                        context.ellipse(sx, sy, half_width, half_height, 0, 0, 2 * Math.PI, false);
+                    }
+                    else {
+                        context.moveTo(sx, sy - half_height);
+                        context.bezierCurveTo(sx + two_thirds_width, sy - half_height, sx + two_thirds_width, sy + half_height, sx, sy + half_height);
+                        context.bezierCurveTo(sx - two_thirds_width, sy + half_height, sx - two_thirds_width, sy - half_height, sx, sy - half_height);
+                        context.closePath();
+                    }
+                    if (_strokeColor) {
+                        context.strokeStyle = _strokeColor;
+                        context.stroke();
+                    }
+                    if (_fillColor) {
+                        context.fillStyle = _fillColor;
+                        context.fill();
+                    }
 				}
 
 				return self;
@@ -602,7 +611,7 @@
 			}
 			return annotation;
 		}
-		function startDrawRect(e) {
+		function startDrawShape(e) {
 			if (drawMode) {
 				var r = Math.floor(Math.random() * 256);
 				var g = Math.floor(Math.random() * 256);
@@ -611,15 +620,68 @@
 				currentStartX = getCanvasX(e.clientX);
 				currentStartY = getCanvasY(e.clientY);
 				drawing = true;
-			} else if(currentSelectedRect && cursor != 'default') {
-				// Translocating annotation
+			} // Translocating annotation
+			else if(currentSelectedShape && cursor != 'default') {
 				currentStartX = getCanvasX(e.clientX);
 				currentStartY = getCanvasY(e.clientY);
-				currentSelectedRect.drawHandles = false;
-				currentSelectedRect.dashed = true;
+				currentSelectedShape.drawHandles = false;
+				currentSelectedShape.dashed = true;					
 				translocating = true;
 			}
 		}
+        function showTempShape(e) {
+            if (selectedShape == 'Rectangle')
+                showTempRect(e);
+            else
+                showTempEllipse(e);
+        }
+        function showTempEllipse(e) {
+			if (drawing) {
+				var width = getCanvasX(e.clientX) - currentStartX - 1;
+				var height = getCanvasY(e.clientY) - currentStartY - 1;
+				drawObjects();
+				new rect(currentStartX, currentStartY, width, height)
+						.setStrokeColor(color)
+						.draw('mainCanvas');
+                new ellipse(currentStartX, currentStartY, width, height)
+                        .setStrokeColor(color)
+                        .draw('mainCanvas');
+			}
+			else if (translocating && currentSelectedShape) {
+				drawObjects();
+				currentSelectedShape.clone()
+					.translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+					.setStrokeColor('blue')
+					.setSelected(true)
+					.setDrawHandles(false)
+					.setLabelTextColor('white')
+					.setShadow(true)
+					.draw('mainCanvas');
+			}
+			else if(!drawMode) {
+				if (currentSelectedShape && currentSelectedShape == getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 2, 2)) {
+					for (var key in currentSelectedShape.dragHandles) {
+						if (e && e.target && e.target.style) {
+							if (currentSelectedShape.dragHandles[key].containsPoint(getCanvasX(e.clientX), getCanvasY(e.clientY))) {
+								cursor = key + '-resize';
+								break;
+							}
+						}
+						cursor = 'move';
+					}
+				}
+				else {
+					unSelectObjectsProperty('hovered');
+					var annotation = getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 0, 0);
+					if (annotation && !annotation.selected) {
+						annotation.hovered = true;
+					}
+					cursor = 'default';
+					drawObjects();
+				}
+				e.target.style.cursor = cursor;
+			}
+        }
 		function showTempRect(e) {
 			if (drawing) {
 				var width = getCanvasX(e.clientX) - currentStartX - 1;
@@ -628,21 +690,23 @@
 				new rect(currentStartX, currentStartY, width, height)
 						.setStrokeColor(color)
 						.draw('mainCanvas');
-			} else if (translocating && currentSelectedRect) {
+			}
+			else if (translocating && currentSelectedRect) {
 				drawObjects();
-				currentSelectedRect.clone()
-						.translocate(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
-						.setStrokeColor('blue')
-						.setSelected(true)
-						.setDrawHandles(false)
-						.setLabelTextColor('white')
-						.setShadow(true)
-						.draw('mainCanvas');
-			} else if(!drawMode) {
-				if (currentSelectedRect && currentSelectedRect == getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 2, 2)) {
-					for (var key in currentSelectedRect.dragHandles) {
+				currentSelectedShape.clone()
+					.translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+					.setStrokeColor('blue')
+					.setSelected(true)
+					.setDrawHandles(false)
+					.setLabelTextColor('white')
+					.setShadow(true)
+					.draw('mainCanvas');
+			}
+			else if(!drawMode) {
+				if (currentSelectedShape && currentSelectedShape == getAnnotation(getCanvasX(e.clientX), getCanvasY(e.clientY), 2, 2)) {
+					for (var key in currentSelectedShape.dragHandles) {
 						if (e && e.target && e.target.style) {
-							if (currentSelectedRect.dragHandles[key].containsPoint(getCanvasX(e.clientX), getCanvasY(e.clientY))) {
+							if (currentSelectedShape.dragHandles[key].containsPoint(getCanvasX(e.clientX), getCanvasY(e.clientY))) {
 								cursor = key + '-resize';
 								break;
 							}
@@ -661,9 +725,15 @@
 				e.target.style.cursor = cursor;
 			}
 		}
+        function stopDrawShape(e) {
+            if (selectedShape == 'Rectangle')
+                stopDrawRect(e);
+            else
+                stopDrawEllipse(e);            
+        }
 		function stopDrawRect(e) {
 			if (drawing) {
-				showTempRect(e);
+				showTempShape(e);
 				drawing = false;
 				var width = getCanvasX(e.clientX) - currentStartX - 1;
 				var height = getCanvasY(e.clientY) - currentStartY - 1;
@@ -672,18 +742,45 @@
 					return;
 				}
 				unSelectObjectsProperty('selected');
-				var newRect = new rect(currentStartX, currentStartY, width, height).setStrokeColor(color).setLabelText('Annotation').setSelected(true);
-				// currentSelectedRect = newRect;
+				var newRect = new rect(currentStartX, currentStartY, width, height).setStrokeColor(color).setLabelText('Test').setSelected(true);
+				currentSelectedShape = newRect;
 				drawingObjects.push(newRect);
 				drawObjects();
-				loadCards();
-				var currentIndex = drawingObjects.length -1;
-				selectAnnotationFromCard(currentIndex);
-			} else if (translocating && currentSelectedRect) {
+			}
+			else if (translocating && currentSelectedShape) {
 				translocating = false;
 				var currentSelectedIndex = drawingObjects.indexOf(currentSelectedRect);
 				var newRect = currentSelectedRect.clone()
-						.translocate(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+						.translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
+						.setSelected(true)
+						.setDrawHandles(true);
+				drawingObjects[currentSelectedIndex] = newRect;
+				drawObjects();
+			}
+		}
+	function stopDrawEllipse(e) {
+			if (drawing) {
+				showTempShape(e);
+				drawing = false;
+				var width = getCanvasX(e.clientX) - currentStartX - 1;
+				var height = getCanvasY(e.clientY) - currentStartY - 1;
+				if (Math.abs(width) < minWidth || Math.abs(height) < minHeight) {
+					alert('You made stuff too small, try again.');
+					return;
+				}
+				unSelectObjectsProperty('selected');
+                var newEllipse = new ellipse(currentStartX, currentStartY, width, height)
+                        .setStrokeColor(color)
+                        .draw('mainCanvas');				
+                currentSelectedShape = newEllipse;
+				drawingObjects.push(newEllipse);
+				drawObjects();
+			}
+			else if (translocating && currentSelectedShape) {
+				translocating = false;
+				var currentSelectedIndex = drawingObjects.indexOf(currentSelectedShape);
+				var newRect = currentSelectedShape.clone()
+						.translocateRect(currentStartX, getCanvasX(e.clientX), currentStartY, getCanvasY(e.clientY), cursor)
 						.setSelected(true)
 						.setDrawHandles(true);
 				drawingObjects[currentSelectedIndex] = newRect;
@@ -713,10 +810,16 @@
 				}
 			}
 		}
+		       function shapeChange(c) {
+            if (c.value == 'Rectangle')
+                selectedShape = 'Rectangle';
+            else
+                selectedShape = 'Ellipse';
+        }
 		function drawModeChange(c) {
 			drawMode = c;
-			if (currentSelectedRect) {
-				currentSelectedRect.drawHandles = !c;
+			if (currentSelectedShape) {
+				currentSelectedShape.drawHandles = !c;
 				drawObjects();
 			}
 		}
@@ -728,6 +831,17 @@
 			// TODO: Refactor these based on need
 			return y + offsetY;
 		}
+        function isEllipseSupported(x, y, rx, ry, rot) {
+            try {
+                document.getElementById('mainCanvas')
+                    .getContext('2d')
+                    .ellipse(x, y, rx, ry, rot, 0, 2 * Math.PI);
+            }
+            catch (err) {
+                return false;
+            }
+            return true;
+        }
 
 		function loadCards() {
 			var cardSpace = document.getElementById('cardSpace');
@@ -840,15 +954,17 @@ dolorem eum fugiat quo voluptas nulla pariatur?
 <canvas id="mainCanvas" width="640" height="480"
         style="border: 1px solid black; z-index: 1"
         onclick="selectAnnotation(event);"
-        onmousemove="showTempRect(event);"
-        onmousedown="startDrawRect(event);"
-        onmouseup="stopDrawRect(event);"
+        onmousemove="showTempShape(event);"
+        onmousedown="startDrawShape(event);"
+        onmouseup="stopDrawShape(event);"
         onmouseover="focusGained(event)"
         onmouseout="focusLost(event)"></canvas>
 <div style="position: absolute; left: 690px; top: 25px; border: solid 1px black; height: 480px; width: 200px; font-family: Arial; font-size: 10px; overflow: auto;">
 	<div style="position: relative; height: 40px; width: 200px;">
 		Draw Mode: <input type="radio" name="drawMode" checked="checked" id="drawMode" onclick="drawModeChange(true);" />
 		Select Mode: <input type="radio" name="drawMode" id="selectMode" onclick="drawModeChange(false);"/><br />
+   Rectangle: <input type="radio" name="shape" value="Rectangle" checked="checked" onclick="shapeChange(this)"/>
+    Ellipse: <input type="radio" name="shape" value="Ellipse" onclick="shapeChange(this)"/> <br />
 	</div>
 	<div id="cardSpace" name="cardSpace" style="position: relative; height: 430px; width: 186px; padding: 2px 2px 2px 2px; overlfow: auto; margin: 2px 2px 2px 2px;">
 	</div>
